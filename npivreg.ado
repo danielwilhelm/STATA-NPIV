@@ -15,6 +15,7 @@ program define npivreg
 		syntax varlist(numeric)
 		display "varlist is `varlist'"
 		
+		capture ssc install bspline
 		capture drop px* qx* npest* P*
 		global mylist `varlist'
 		global depvar   : word 1 of $mylist
