@@ -7,7 +7,7 @@ This program estimates the function g(x) in
 Y = g(X) + e with E(e|Z)=0
 
 where Y is a scalar dependent variable ("depvar"), 
-X is a scalar explanatory variable ("expvar"), and 
+X is a scalar endogenous variable ("expvar"), and 
 Z a scalar instrument ("inst").
 
 Syntax:
