@@ -1,17 +1,23 @@
 /* 
-Nonparametric instrumental variable regression
+Estimation of Nonparametric instrumental variable (NPIV) models
 Version 0.1.0 6th May 2016
 
-This version works for scalar dependent variable Y, 
-scalar endogenous regressor X and scalar instrument Z. 
+This program estimates the function g(x) in
 
-Syntax is following.
+Y = g(X) + e with E(e|Z)=0
+
+where Y is a scalar dependent variable ("depvar"), 
+X is a scalar explanatory variable ("expvar"), and 
+Z a scalar instrument ("inst").
+
+Syntax:
 npivreg depvar expvar inst
 */
 
 program define npivreg
-		version 14
+		version 12
 		
+		// initializations
 		syntax varlist(numeric)
 		display "varlist is `varlist'"
 		
@@ -21,10 +27,12 @@ program define npivreg
 		global depvar   : word 1 of $mylist
 		global expvar   : word 2 of $mylist
 		global inst     : word 3 of $mylist
-				
+		
+		// generate B-spline bases for X and Z
 		quietly bspline, xvar($expvar) gen(px) power(2)
 		quietly bspline, xvar($inst) gen(qx) power(3)
 		
+		// compute NPIV fitted value
 		mata : P 		= st_data(., "px*")
 		mata : Q 		= st_data(., "qx*")
 		mata : Y 		= st_data(., "$depvar")
@@ -35,7 +43,8 @@ program define npivreg
 		mata : st_matrix("beta", b)
 		mata : st_matrix("P", P)
 		mata : st_matrix("npest", Yhat)
-				
+
+		// plot NPIV fitted value
 		svmat npest, name(npest)
 		svmat P, name(P)
 		svmat beta, name(beta)
