@@ -13,30 +13,36 @@ where Y is a scalar dependent variable ("depvar"),
 X is a scalar endogenous variable ("expvar"), and 
 Z a scalar instrument ("inst").
 
-
 Syntax:
 npivreg depvar expvar inst [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) bspline] 
 
-where power_exp is the power of basis functions for x,
-power_inst is the power of basis functions for z,
-num_exp is the number of knots for x,
-num_inst is the number of knots for z.
+where power_exp is the power of basis functions for x (defalut = 2),
+power_inst is the power of basis functions for z (defalut = 3),
+num_exp is the number of knots for x (defalut = 2),
+num_inst is the number of knots for z (defalut = 3).
+
+Users can freely modify the power and the type of basis functions and the number of knots.
+If unspecified, the command runs on a default setting
 */
 
 program define npivreg
-		version 14
+		version 12
 		
 		// initializations
-		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 3) num_inst(integer 4) bspline]
+		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) bspline]
 		display "varlist is `varlist'"
 		
-		tempname b p Yhat
+		// generate temporary names to avoid any crash in Stata spaces
+		tempname b p Yhat depvar expvar inst powerx powerz xmin xmax x_distance zmin zmax z_distance
 		tempvar beta P
 		
-		capture drop npest1
-		capture ssc install polyspline
+		// eliminate any former NPIV regression results
+		capture drop npest*
+		// check whether required commands are installed
 		capture ssc install bspline
-				
+		capture ssc install polyspline
+		
+		// macro assignments		
 		global mylist `varlist'
 		global depvar   : word 1 of $mylist
 		global expvar   : word 2 of $mylist
@@ -74,12 +80,11 @@ program define npivreg
 		// compute NPIV fitted value by using a Mata function
 		mata : npiv_estimation("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'")
 		
-		// plot NPIV fitted value
-		svmat `Yhat', name(npest)
-		svmat `p', name(`P')
-		svmat `b', name(`beta')
+		// convert the Stata matrices to Stata variable
+		svmat `Yhat', name(npest)  // NPIV estimate
+		svmat `p', name(`P')       // basis functions for x (not returned)
+		svmat `b', name(`beta')    // coefficients for series estimate (not returned)
 		label variable npest "NPIV fitted value"
-		scatter $depvar $expvar, msym(circle_hollow) || line npest $expvar, sort	
 		drop basisexpvar* basisinst*
 end
 
@@ -93,13 +98,17 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
 {
     real vector Y, b, Yhat
 	real matrix P, Q, MQ
+	// load bases from Stata variable space
 	P 		= st_data(., basisname1)
 	Q 		= st_data(., basisname2)
 	Y 		= st_data(., vname)
+	
+	// compute the estimate by the closed form solution
 	MQ 		= Q*invsym(Q'*Q)*Q'
 	b  		= invsym(P'*MQ*P)*P'*MQ*Y
 	Yhat 	= P*b
 		
+	// store the mata results into the Stata matrix space
 	st_matrix(bname, b)
 	st_matrix(pname, P)
 	st_matrix(estname, Yhat)           
