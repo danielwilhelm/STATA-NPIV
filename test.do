@@ -1,28 +1,18 @@
 clear
-capture program drop npivreg
+program drop npivreg
 
-// number of observations = sample size
-set obs 10000
+// Load a data set "auto"
+sysuse auto
 
-// instrument z is generated from standard normal dist.
-generate double z = rnormal(0, 1)
+// Compute NPIV estimate with bspline bases and draw a plot 
+npivreg price mpg trunk, power_exp(4) power_inst(5) num_exp(4) num_inst(5) bspline
+scatter price mpg, msym(circle_hollow) || line npest mpg, sort title("power(4,5), knots(4,5)") name(bspline_result, replace)
 
-/* errors u and v are generated from Joint normal dist
-    u       ~     N( 0,  1.0   0.5 )
-	v              ( 0,  0.5   1.0 )
-   correlation btw u and v = 0.5
-*/
-matrix C = (1, .5 \ .5, 1)
-drawnorm u v, n(10000) corr(C)
+// Compute NPIV estimate with polynomial bases and draw a plot 
+npivreg price mpg trunk, power_exp(4) power_inst(5) num_exp(4) num_inst(5) 
+scatter price mpg, msym(circle_hollow) || line npest mpg, sort title("power(4,5), knots(4,5)") name(poly_result, replace)
 
-// DGP for x
-generate x = 2*z + v
-// DGP for y
-generate y = exp(0.5*x) + u
-generate true_y = exp(0.5*x)
+graph close _all
+// draw a combined graph
+gr combine poly_result bspline_result, title("Polyspline(left) vs Bspline(right)")
 
-// NPIV regression
-npivreg y x z, num_exp(3) num_inst(4) power_exp(3) power_inst(4) bspline
-
-// Comparison of true y and fitted value
-line true_y x, sort || line npest $expvar, sort
