@@ -29,18 +29,19 @@ program define npivreg
 		version 12
 		
 		// initializations
-		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) bspline]
+		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) bspline]
 		display "varlist is `varlist'"
 		
 		// generate temporary names to avoid any crash in Stata spaces
-		tempname b p Yhat depvar expvar inst powerx powerz xmin xmax x_distance zmin zmax z_distance
-		tempvar beta P
+		tempname b p Yhat depvar expvar inst powerx powerz xmin xmax x_distance zmin zmax z_distance upctile
+		tempvar xlpct xupct zlpct zupct beta P
 		
 		// eliminate any former NPIV regression results
-		capture drop npest*
+		capture drop npest* grid*
+		
 		// check whether required commands are installed
-		capture ssc install bspline
-		capture ssc install polyspline
+		// capture ssc install bspline
+		// capture ssc install polyspline
 		
 		// macro assignments		
 		global mylist `varlist'
@@ -49,23 +50,33 @@ program define npivreg
 		global inst     : word 3 of $mylist
 		global powerx `power_exp'
 		global powerz `power_inst'
+		local upctile = 100 - `pctile'
+				
+		//equidistance nodes (knots) are generated for x from pctile (default = 5) to upctile(default = 95)
+		quietly egen `xlpct' = pctile($expvar), p(`pctile')
+		quietly egen `xupct' = pctile($expvar), p(`upctile')
+		quietly egen `zlpct' = pctile($inst), p(`pctile')
+		quietly egen `zupct' = pctile($inst), p(`upctile')
+		global xmin = `xlpct'
+		global xmax = `xupct'
+		global x_distance = ($xmax - $xmin)/(`num_exp' - 1 )
 		
-		//equidistance nodes (knots) are generated for x
-		quietly summarize $expvar
-		global xmin = r(min)
-		global xmax = r(max)
-		global x_distance = ($xmax - $xmin)/`num_exp'
-		
-		//equidistance nodes (knots) are generated for z
+		//equidistance nodes (knots) are generated for z from pctile (default = 5) to upctile(default = 95)
 		quietly summarize $inst
-		global zmin = r(min)
-		global zmax = r(max)
-		global z_distance = ($zmax - $zmin)/`num_inst'
-						
+		global zmin = `zlpct'
+		global zmax = `zupct'
+		global z_distance = ($zmax - $zmin)/(`num_inst' - 1)
+        
+		//fine grid for fitted value of g(X)
+		mata : grid = rangen($xmin, $xmax, rows(st_data(., "$expvar")))
+		mata : st_addvar("float", "grid")
+		mata : st_store(., "grid", grid)
+		
 		// generate bases for X and Z
 	    // If the option "bspline" is not typed, polynomial spline is used.
 		if "`bspline'" == "" {
 		capture drop basisexpvar* basisinst* npest*
+		quietly polyspline grid, gen(gridpoint) refpts($xmin($x_distance)$xmax) power($powerx)
         quietly polyspline $expvar, gen(basisexpvar) refpts($xmin($x_distance)$xmax) power($powerx)
 		quietly polyspline $inst, gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz)
         }
@@ -73,6 +84,7 @@ program define npivreg
 		// If bspline is specified
         else {
 		capture drop basisexpvar* basisinst* npest*
+		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx)
         quietly bspline, xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power($powerx)
 		quietly bspline, xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
         }
@@ -85,7 +97,7 @@ program define npivreg
 		svmat `p', name(`P')       // basis functions for x (not returned)
 		svmat `b', name(`beta')    // coefficients for series estimate (not returned)
 		label variable npest "NPIV fitted value"
-		drop basisexpvar* basisinst*
+		drop basisexpvar* basisinst* gridpoint*
 end
 
 
@@ -106,7 +118,8 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
 	// compute the estimate by the closed form solution
 	MQ 		= Q*invsym(Q'*Q)*Q'
 	b  		= invsym(P'*MQ*P)*P'*MQ*Y
-	Yhat 	= P*b
+	GP      = st_data(., "gridpoint*") // spline bases on fine grid points
+	Yhat 	= GP*b //fitted value on fine grid
 		
 	// store the mata results into the Stata matrix space
 	st_matrix(bname, b)
