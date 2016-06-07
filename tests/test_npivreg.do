@@ -22,6 +22,7 @@ drawnorm u v, corr(C)
 generate x = 2*z + v
 // DGP for y
 // generate true_y = exp(1.5*x)
+//generate true_y = x^3 - x^2 + x
 generate true_y = exp(0.5*x) / (1 + exp(0.5*x))
 generate y =  true_y + u
 
