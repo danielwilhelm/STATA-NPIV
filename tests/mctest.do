@@ -2,11 +2,11 @@
 // Modify the number of reps and run
 
 clear
-program drop mctest_npiv
+capture program drop mctest_npiv
 
 // This stata implemented command does MC simulation
 // The estimated function in each trial is stored in _b_r# vector
-simulate _b, rep(5000) : mctest_npiv
+simulate _b, rep(500) : mctest_npiv
 
 // Mata codes for simple matrix algebra
 mata
