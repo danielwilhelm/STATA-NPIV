@@ -14,22 +14,23 @@ X is a scalar endogenous variable ("expvar"), and
 Z a scalar instrument ("inst").
 
 Syntax:
-npivreg depvar expvar inst [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) bspline] 
+npivreg depvar expvar inst [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial] 
 
 where power_exp is the power of basis functions for x (defalut = 2),
 power_inst is the power of basis functions for z (defalut = 3),
 num_exp is the number of knots for x (defalut = 2),
-num_inst is the number of knots for z (defalut = 3).
+num_inst is the number of knots for z (defalut = 3), 
+polonomial option gives the basis functions for polynomial spline (default is bslpline).
 
 Users can freely modify the power and the type of basis functions and the number of knots.
-If unspecified, the command runs on a default setting
+If unspecified, the command runs on a default setting.
 */
 
 program define npivreg
 		version 12
 		
 		// initializations
-		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) bspline]
+		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) polynomial]
 		display "varlist is `varlist'"
 		
 		// generate temporary names to avoid any crash in Stata spaces
@@ -73,21 +74,21 @@ program define npivreg
 		mata : st_store(., "grid", grid)
 		
 		// generate bases for X and Z
-	    // If the option "bspline" is not typed, polynomial spline is used.
-		if "`bspline'" == "" {
+	    // If the option "polynomial" is not typed, bspline is used.
+		if "`polynomial'" == "" {
 		capture drop basisexpvar* basisinst* npest*
-		quietly polyspline grid, gen(gridpoint) refpts($xmin($x_distance)$xmax) power($powerx)
-        quietly polyspline $expvar, gen(basisexpvar) refpts($xmin($x_distance)$xmax) power($powerx)
-		quietly polyspline $inst, gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz)
-        }
-		
-		// If bspline is specified
-        else {
-		capture drop basisexpvar* basisinst* npest*
-		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx)
+		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx) 
         quietly bspline, xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power($powerx)
 		quietly bspline, xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
         }
+		
+		// If polyspline is typed
+        else {
+		capture drop basisexpvar* basisinst* npest*
+		quietly polyspline grid, gen(gridpoint) refpts($xmin($x_distance)$xmax) power($powerx) 
+        quietly polyspline $expvar, gen(basisexpvar) refpts($xmin($x_distance)$xmax) power($powerx) 
+		quietly polyspline $inst, gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz) 
+		}
 		
 		// compute NPIV fitted value by using a Mata function
 		mata : npiv_estimation("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'")
