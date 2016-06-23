@@ -28,23 +28,23 @@ generate y =  true_y + u
 
 
 // NPIV regression 
-npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(2)
+npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(2) polynomial
 // Comparison of true y and fitted value (drawing a chart)
 quietly line true_y x, sort || line npest grid, title("power= (2,3), knots = (3,4)") name(setting_poly, replace)
 
-npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(2) bspline
+npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(2) 
 quietly line true_y x, sort || line npest grid, title("power= (2,3), knots = (3,4)") name(setting_bspl, replace)
 
-npivreg y x z, power_exp(5) power_inst(6) num_exp(7) num_inst(8) pctile(2)
+npivreg y x z, power_exp(5) power_inst(6) num_exp(7) num_inst(8) pctile(2) polynomial
 quietly line true_y x, sort || line npest grid, title("power= (5,6), knots = (7,8)") name(setting_poly2, replace)
 
-npivreg y x z, power_exp(5) power_inst(6) num_exp(7) num_inst(8) pctile(2) bspline
+npivreg y x z, power_exp(5) power_inst(6) num_exp(7) num_inst(8) pctile(2) 
 quietly line true_y x, sort || line npest grid, title("power= (5,6), knots = (7,8)") name(setting_bspl2, replace)
 
-// npivreg y x z, num_exp(9) num_inst(10) power_exp(9) power_inst(10)
+// npivreg y x z, num_exp(9) num_inst(10) power_exp(9) power_inst(10) polynomial
 // quietly line true_y x, sort || line npest $expvar, sort title("power= (9,10), knots = (9,10)") name(setting_poly3, replace)
 
-// npivreg y x z, num_exp(9) num_inst(10) power_exp(9) power_inst(10) bspline
+// npivreg y x z, num_exp(9) num_inst(10) power_exp(9) power_inst(10) 
 // quietly line true_y x, sort || line npest $expvar, sort title("power= (9,10), knots = (9,10)") name(setting_bspl3, replace)
 
 graph close _all
