@@ -6,19 +6,19 @@ capture program drop npivoptim
 sysuse auto
 
 // Compute NPIV estimate with bspline bases and draw a plot (using the closed form solution)
-npivreg price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5) bspline
+npivreg price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5) 
 scatter price mpg, msym(circle_hollow) || line npest grid, title("power(2,2), knots(2,5)") name(bspline_result, replace)
 
 // Compute NPIV estimate with polynomial bases and draw a plot (using the closed form solution)
-npivreg price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5)
+npivreg price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5) polynomial
 scatter price mpg, msym(circle_hollow) || line npest grid, title("power(2,2), knots(2,5)") name(poly_result, replace)
 
 // Compute NPIV estimate with bspline bases and draw a plot (using optimization routine)
-npivoptim price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5) bspline 
+npivoptim price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5) 
 scatter price mpg, msym(circle_hollow) || line npest grid, title("power(2,2), knots(2,5)") name(bspline_result_op, replace)
 
 // Compute NPIV estimate with polynomial bases and draw a plot (using optimization routine)
-npivoptim price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5)
+npivoptim price mpg trunk, power_exp(2) power_inst(2) num_exp(2) num_inst(5) pctile(5) polynomial
 scatter price mpg, msym(circle_hollow) || line npest grid, title("power(2,2), knots(2,5)") name(poly_result_op, replace)
 
 graph close _all
