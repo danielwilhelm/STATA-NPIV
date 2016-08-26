@@ -29,7 +29,7 @@ program define npivmonotone
 		version 14
 		
 		// initializations
-		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) polynomial] 
+		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) decreasing] 
 		display "varlist is `varlist'"
 		
 		// generate temporary names to avoid any crash in Stata spaces
@@ -72,25 +72,20 @@ program define npivmonotone
 		mata : st_addvar("float", "grid")
 		mata : st_store(., "grid", grid)
 		
-		// generate bases for X and Z
-	    // If the option "polynomial" is not typed, bspline is used.
-		if "`polynomial'" == "" {
-		capture drop basisexpvar* basisinst* npest*
+		// generate bases for X and Z by bspline
+	    capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx)
         quietly bspline, xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power($powerx)
 		quietly bspline, xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
-        }
-		
-		// If polyspline is typed
-        else {
-		capture drop basisexpvar* basisinst* npest*
-		quietly polyspline grid, gen(gridpoint) refpts($xmin($x_distance)$xmax) power($powerx)
-        quietly polyspline $expvar, gen(basisexpvar) refpts($xmin($x_distance)$xmax) power($powerx)
-		quietly polyspline $inst, gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz)
+        		
+		// compute NPIV fitted value by using a Mata function
+		if "`decreasing'" == "" {
+		mata : npiv_optimize("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'")
 		}
 		
-		// compute NPIV fitted value by using a Mata function
-		mata : npiv_optimize("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'")
+		else{
+		mata : npiv_optimize_dec("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'")
+		}
 		
 		// convert the Stata matrices to Stata variable
 		svmat `Yhat', name(npest)  // NPIV estimate
@@ -101,7 +96,7 @@ program define npivmonotone
 end
 
 
-// Define a Mata function computing NPIV estimates
+// Define a Mata function computing NPIV estimates with increasing shape
 mata :
 
 void npiv_optimize(string scalar vname, string scalar basisname1, 
@@ -131,38 +126,100 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		optimize_init_conv_ignorenrtol(S, "on")
 		//optimize_init_conv_maxiter(S, 100)
 		temp    = optimize(S) // parameter estimated by optimisation
-
-		beta    = ( exp(temp[1]), exp(temp[1]) + exp(temp[2]), exp(temp[1]) + exp(temp[2]) + exp(temp[3]),
-		            exp(temp[1]) + exp(temp[2]) + exp(temp[3]) + exp(temp[4]),
-		            exp(temp[1]) + exp(temp[2]) + exp(temp[3]) + exp(temp[4]) + exp(temp[5]),
-					exp(temp[1]) + exp(temp[2]) + exp(temp[3]) + exp(temp[4]) + exp(temp[5]) + exp(temp[6]), 
-					exp(temp[1]) + exp(temp[2]) + exp(temp[3]) + exp(temp[4]) + exp(temp[5]) + exp(temp[6]) + exp(temp[7]),
-					exp(temp[1]) + exp(temp[2]) + exp(temp[3]) + exp(temp[4]) + exp(temp[5]) + exp(temp[6]) + exp(temp[7]) + exp(temp[8]),
-					exp(temp[1]) + exp(temp[2]) + exp(temp[3]) + exp(temp[4]) + exp(temp[5]) + exp(temp[6]) + exp(temp[7]) + exp(temp[8]) + exp(temp[9]) )
+     	beta    = J(1, n, 0)
+		prebeta = J(1, n, 0)
+		
+		for (i = 1; i<=n; i++) {
+		   prebeta[i] = exp(temp)[i]
+		   beta[i]    = sum(prebeta)
+		   }
+		   
 		GP      = st_data(., "gridpoint*") // spline bases on fine grid points
 		Yhat 	= GP*beta' //fitted value on fine grid
 		
 		// store the mata results into the Stata matrix space
-		st_matrix("temp", temp)
 		st_matrix(bname, beta)
 		st_matrix(pname, P)
 		st_matrix(estname, Yhat)           
 }
 
-// objective function for minimisation
+// Define a Mata function computing NPIV estimates with decreasing shape
+void npiv_optimize_dec(string scalar vname, string scalar basisname1, 
+                       string scalar basisname2, string scalar bname, 
+				       string scalar pname, string scalar estname)
+					 
+{    	real vector Y, beta, Yhat
+		real matrix P, Q
+		real scalar n
+
+        P 		= st_data(., basisname1)
+		Q 		= st_data(., basisname2)
+		Y 		= st_data(., vname)
+ 		n       = cols(P)
+		
+	    // optimisation routine for the minimisation problem
+    	S 		= optimize_init()
+		ival    = J(1, n, 1)
+
+		optimize_init_argument(S, 1, P)
+		optimize_init_argument(S, 2, Q)
+		optimize_init_argument(S, 3, Y)
+        optimize_init_evaluator(S, &objfn_dec())
+        optimize_init_params(S, ival)
+		optimize_init_technique(S, "nr")
+        optimize_init_which(S, "min")
+		optimize_init_conv_ignorenrtol(S, "on")
+		//optimize_init_conv_maxiter(S, 100)
+		temp    = optimize(S) // parameter estimated by optimisation
+     	beta    = J(1, n, 0)
+		prebeta = J(1, n, 0)
+		
+		for (i = 1; i<=n; i++) {
+		   prebeta[i] = -exp(temp)[i]
+		   beta[i]    = sum(prebeta)
+		   }
+		   
+		GP      = st_data(., "gridpoint*") // spline bases on fine grid points
+		Yhat 	= GP*beta' //fitted value on fine grid
+		
+		// store the mata results into the Stata matrix space
+		st_matrix(bname, beta)
+		st_matrix(pname, P)
+		st_matrix(estname, Yhat)           
+}
+
+// objective function for minimisation with INCREASING OPTION
 void objfn(real scalar todo, real vector B, real matrix P, 
            real matrix Q, real vector Y, val, grad, hess) 
 		   
 {		real matrix MQ 
-		MQ = Q*invsym(Q'*Q)*Q'
-
-		bb = ( exp(B[1]), exp(B[1]) + exp(B[2]), exp(B[1]) + exp(B[2]) + exp(B[3]), 
-			   exp(B[1]) + exp(B[2]) + exp(B[3]) + exp(B[4]), 
-			   exp(B[1]) + exp(B[2]) + exp(B[3]) + exp(B[4]) + exp(B[5]), 
-			   exp(B[1]) + exp(B[2]) + exp(B[3]) + exp(B[4]) + exp(B[5]) + exp(B[6]), 
-			   exp(B[1]) + exp(B[2]) + exp(B[3]) + exp(B[4]) + exp(B[5]) + exp(B[6]) + exp(B[7]),
-			   exp(B[1]) + exp(B[2]) + exp(B[3]) + exp(B[4]) + exp(B[5]) + exp(B[6]) + exp(B[7]) + exp(B[8]),
-			   exp(B[1]) + exp(B[2]) + exp(B[3]) + exp(B[4]) + exp(B[5]) + exp(B[6]) + exp(B[7]) + exp(B[8]) + exp(B[9]) )
+		MQ      = Q*invsym(Q'*Q)*Q'
+		n       = cols(P)
+		bb      = J(1, n, 0)
+		prebb   = J(1, n, 0)
+		for (i = 1; i<=n; i++) {
+		   prebb[i] = exp(B)[i]
+		   bb[i]    = sum(prebb)
+		   }
+		   
 		val = (Y - P*bb')'*MQ*(Y-P*bb')
 }
+
+// objective function for minimisation with DECREASING OPTION
+void objfn_dec(real scalar todo, real vector B, real matrix P, 
+               real matrix Q, real vector Y, val, grad, hess) 
+		   
+{		real matrix MQ 
+		MQ      = Q*invsym(Q'*Q)*Q'
+		n       = cols(P)
+		bb      = J(1, n, 0)
+		prebb   = J(1, n, 0)
+		for (i = 1; i<=n; i++) {
+		   prebb[i] = -exp(B)[i]
+		   bb[i]    = sum(prebb)
+		   }
+		   
+		val = (Y - P*bb')'*MQ*(Y-P*bb')
+}
+
 end
