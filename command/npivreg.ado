@@ -45,7 +45,8 @@ program define npivreg
 		tempvar xlpct xupct zlpct zupct beta P
 		
 		// eliminate any former NPIV regression results
-		capture drop npest* grid*
+		capture drop basisexpvar* basisinst* gridpoint*
+		capture drop npest* grid* beta*
 		
 		// check whether required commands are installed
 		// capture ssc install bspline
