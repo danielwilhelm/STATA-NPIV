@@ -42,7 +42,7 @@ where
 - `power_inst` is the power of basis functions for Z (defalut = 3)
 - `num_exp` is the number of knots for Z (defalut = 2) when using a B-spline basis
 - `num_inst` is the number of knots for Z (defalut = 3) when using a B-spline basis
-- `polonomial` option gives the basis functions for polynomial spline (default is bslpline).
+- `polonomial` option gives the basis functions for polynomial spline (default is B-spline).
 - `increasing` option imposes an increasing shape restriction on function g(x).
 - `decreasing` option imposes an decreasing shape restriction on function g(x).
 
