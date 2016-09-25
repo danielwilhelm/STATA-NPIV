@@ -10,10 +10,10 @@ Files contained in this package:
 ## Installation
 1. Download the package.
 2. Install the `bspline` and `polyspline` functions from ssc by opening STATA and typing
-```
-ssc install bspline
-ssc install polyspline
-```
+	```
+	ssc install bspline
+	ssc install polyspline
+	```
 3. Change into the directory containing this package.
 4. Use the command `npivreg` as described below.
 
