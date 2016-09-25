@@ -1,8 +1,22 @@
 # STATA-NPIV
-This project provides Stata command 'npivreg' for nonparametric estimation of instrumental variable models with or without shape restrictions. 
+This project provides a Stata command `npivreg` for nonparametric estimation of instrumental variable models with or without monotonicity restrictions.
 
-'npivreg.ado' in 'command' folder performs npiv estimation.
+Files contained in this package:
 
-do files in 'test' folder show examples of the use of 'npivreg'.
+- The file 'npivreg.ado' contains the `npivreg` command.
+- The file 'example_no_shape_restriction.do' contains an example that simulates data and then estimates the NPIV model without the monotonicity restriction.
+- The file 'example_shape_restriction.do' contains an example that simulates data and then estimates the NPIV model with the monotonicity restriction.
 
-To run the example do files, those files should be in the same folder in which npivreg.ado is located.
+## Installation
+1. Download the package.
+2. Install the `bspline` and `polyspline` functions from ssc by opening STATA and typing
+
+```
+ssc install bspline
+ssc install polyspline
+```
+
+3. Change into the directory containing this package.
+4. Use the command `npivreg` as described below.
+
+## Syntax
