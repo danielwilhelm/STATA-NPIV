@@ -21,16 +21,18 @@ num_inst is the number of knots for z (defalut = 3),
 polonomial option gives the basis functions for polynomial spline (default is bslpline).
 
 # shape restrictions (bspline is used - power of bslpine for "expvar" is fixed to 2.
-increasing option imposes a increasing shape restriction on function g(X).
-decreasing option imposes a decreasing shape restriction on function g(X).
+increasing option imposes an increasing shape restriction on function g(X).
+decreasing option imposes an decreasing shape restriction on function g(X).
 
 When polynomial is used, shape restrictions cannot be imposed.
-(an error message will come out)
+(an error message will be produced)
 
 Users can freely modify the power and the type of basis functions and the number of knots
 when shape restrictions are not imposed.
 
-If unspecified, the command runs on a default setting.
+If unspecified, the command runs on the default settings.
+
+Code written by Dongwoo Kim.
 */
 
 program define npivreg
