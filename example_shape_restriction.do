@@ -28,7 +28,7 @@ generate y =  true_y + u
 // NPIV regression with decreasing shape restriction
 npivreg y x z, power_exp(2) power_inst(3) num_exp(4) num_inst(4) pctile(1) increasing
 generate ygrid = exp(0.5*grid) / (1 + exp(0.5*grid))
-quietly line ygrid grid, sort || line npest grid, title("increasing restriction") name(increasing, replace) 
+line ygrid grid, sort || line npest grid, title("increasing restriction") name(increasing, replace) 
 
 capture drop ygrid true_y y
 // DGP for y : g(x) is decreasing
@@ -38,9 +38,7 @@ generate y =  true_y + u
 // NPIV regression with decreasing shape restriction
 npivreg y x z, power_exp(2) power_inst(3) num_exp(4) num_inst(4) pctile(1) decreasing
 generate ygrid = -exp(0.5*grid) / (1 + exp(0.5*grid))
-quietly line ygrid grid, sort || line npest grid, title("decreasing restriction") name(decreasing, replace) 
-
-graph close _all
+line ygrid grid, sort || line npest grid, title("decreasing restriction") name(decreasing, replace) 
 
 // Combined graph 
 gr combine increasing decreasing, cols(2) title("increasing(left) and decreasing(right)") ycom
