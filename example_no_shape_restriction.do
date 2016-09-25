@@ -30,15 +30,12 @@ generate y =  true_y + u
 npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(1) polynomial
 // Comparison of true y and fitted value (drawing a chart)
 generate ygrid = exp(0.5*grid) / (1 + exp(0.5*grid))
-quietly line ygrid grid, sort || line npest grid, title("power= (2,3), knots = (3,4)") name(setting_poly, replace)
+line ygrid grid, sort || line npest grid, title("power= (2,3), knots = (3,4)") name(setting_poly, replace)
 
 // NPIV regression with bspline - power(2, 3) and num_knots(3,4)
 npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(1) 
 // Comparison of true y and fitted value (drawing a chart)
-quietly line ygrid grid, sort || line npest grid, title("power= (2,3), knots = (3,4)") name(setting_bspl, replace)
-
-
-graph close _all
+line ygrid grid, sort || line npest grid, title("power= (2,3), knots = (3,4)") name(setting_bspl, replace)
 
 // Combined graph for all the settings
-gr combine setting_poly setting_bspl setting_poly2 setting_bspl2, cols(2) title("Polyspline(left) vs bspline(right)") ycom
+gr combine setting_poly setting_bspl, cols(2) title("Polyspline(left) vs bspline(right)") ycom
