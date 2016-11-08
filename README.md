@@ -70,3 +70,5 @@ NPIV estimation with B-spline bases of powers 2 and 3, and 3 and 4 knots (for X 
 npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) increasing
 ```
 
+# Reference
+[Chetverikov, D. and Wilhelm, D. (2016), "Nonparametric Instrumental Variable Estimation Under Monotonicity", cemmap working paper](http://www.ucl.ac.uk/~uctpdwi/papers/cwp481616.pdf)
