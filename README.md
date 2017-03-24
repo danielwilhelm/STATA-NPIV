@@ -1,11 +1,14 @@
-# STATA-NPIV
-This project provides a Stata command `npivreg` for nonparametric estimation of instrumental variable (NPIV) models with or without monotonicity restrictions.
+# STATA-NPIV (Author : Dongwoo Kim and Daniel Wilhelm)
+This project provides a Stata command `npivreg` for nonparametric estimation of instrumental variable (NPIV) models with or without monotonicity restrictions and 'npivregcv' for cross validation.
 
 Files contained in this package:
 
 - The file 'npivreg.ado' contains the `npivreg` command.
+- The file 'npivregcv.ado' contains the `npivregcv` command.
 - The file 'example_no_shape_restriction.do' contains an example that simulates data and then estimates the NPIV model without the monotonicity restriction.
 - The file 'example_shape_restriction.do' contains an example that simulates data and then estimates the NPIV model with the monotonicity restriction.
+- The file 'mcsimulation_cv.do' contains an example that simulates data and then estimates the NPIV model with the monotonicity restriction and the optimal number of knots found by cross validation.
+
 
 ## Installation
 1. Download the package.
@@ -34,7 +37,7 @@ where
 Syntax:
 
 ```
-npivreg depvar expvar inst [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
+npivreg depvar expvar inst [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
 ```
 
 where
@@ -53,6 +56,8 @@ when shape restrictions are not imposed.
 
 If options are left unspecified, the command runs on the default settings.
 
+The command `npivregcv` estimates the function `g(x)` in the NPIV model with cross validation. It generates the npiv estimate for `g(x)` and also shows the optimal number of knots when a user types 'display opt_knot'.
+
 ## Examples
 
 NPIV estimation with default options:
@@ -69,6 +74,11 @@ NPIV estimation with B-spline bases of powers 2 and 3, and 3 and 4 knots (for X 
 ```
 npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) increasing
 ```
+NPIV estimation with cross validation, imposing that the estimator of g(x) is increasing
+```
+npivregcv y x z, power_exp(2) power_inst(3) increasing
+```
+
 
 # Reference
 [Chetverikov, D. and Wilhelm, D. (2016), "Nonparametric Instrumental Variable Estimation Under Monotonicity", cemmap working paper](http://www.ucl.ac.uk/~uctpdwi/papers/cwp481616.pdf)
