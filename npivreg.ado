@@ -12,7 +12,7 @@ X is a scalar endogenous variable ("expvar"), and
 Z a scalar instrument ("inst").
 
 Syntax:
-npivreg depvar expvar inst [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing] 
+npivreg depvar expvar inst [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing] 
 
 where power_exp is the power of basis functions for x (defalut = 2),
 power_inst is the power of basis functions for z (defalut = 3),
@@ -37,14 +37,15 @@ program define npivreg
 		version 12
 		
 		// initializations
-		syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) polynomial increasing decreasing]
-				
+		syntax varlist(numeric) [if] [in] [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) polynomial increasing decreasing]
+		marksample touse
+		
 		// generate temporary names to avoid any crash in Stata spaces
-		tempname b p Yhat Ycv depvar expvar inst powerx powerz xmin xmax x_distance zmin zmax z_distance upctile
+		tempname b p Y Yhat Ycv depvar expvar inst powerx powerz xmin xmax x_distance zmin zmax z_distance upctile
 		tempvar xlpct xupct zlpct zupct beta P
 		
 		// eliminate any former NPIV regression results
-		capture drop basisexpvar* basisinst* gridpoint*
+		capture drop basisexpvar* basisinst* gridpoint* tempbasis*
 		capture drop npest* npcv* grid* beta*
 		
 		// check whether required commands are installed
@@ -60,6 +61,8 @@ program define npivreg
 		global powerz `power_inst'
 		local upctile = 100 - `pctile'
 				
+		quietly gen Y = $depvar if `touse'
+						
 		//equidistance nodes (knots) are generated for x from pctile (default = 5) to upctile(default = 95)
 		quietly egen `xlpct' = pctile($expvar), p(`pctile')
 		quietly egen `xupct' = pctile($expvar), p(`upctile')
@@ -76,7 +79,7 @@ program define npivreg
 		global z_distance = ($zmax - $zmin)/(`num_inst' - 1)
         
 		//fine grid for fitted value of g(X)
-		mata : grid = rangen($xmin, $xmax, rows(st_data(., "$expvar")))
+		mata : grid = rangen($xmin, $xmax, rows(st_data(., "$depvar")))
 		mata : st_addvar("float", "grid")
 		mata : st_store(., "grid", grid)
 		
@@ -87,25 +90,31 @@ program define npivreg
 		if "`increasing'" == "increasing" {
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power(2) 
-        quietly bspline, xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power(2)
-		quietly bspline, xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
-		mata : npiv_optimize("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+        quietly bspline if `touse', xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power(2)
+		capture quietly bspline if 1-`touse', xvar($expvar) gen(tempbasis) knots($xmin($x_distance)$xmax) power(2)
+		quietly bspline if `touse', xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
+				
+		mata : npiv_optimize("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
 		}
 		// check whether decreasing option is used
 		else if "`decreasing'" == "decreasing" {
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power(2) 
-        quietly bspline, xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power(2)
-		quietly bspline, xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
-		mata : npiv_optimize_dec("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+        quietly bspline if `touse', xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power(2)
+		capture quietly bspline if 1-`touse', xvar($expvar) gen(tempbasis) knots($xmin($x_distance)$xmax) power(2)
+		quietly bspline if `touse', xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
+		
+		mata : npiv_optimize_dec("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
 		}
 		// procedure without shape restrictions
 		else {
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx) 
-        quietly bspline, xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power($powerx)
-		quietly bspline, xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
-		mata : npiv_estimation("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+        quietly bspline if `touse', xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power($powerx)
+		capture quietly bspline if 1-`touse', xvar($expvar) gen(tempbasis) knots($xmin($x_distance)$xmax) power($powerx)
+		quietly bspline if `touse', xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
+		
+		mata : npiv_estimation("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
 		}
 		}
 		
@@ -126,10 +135,11 @@ program define npivreg
 		else {
 		capture drop basisexpvar* basisinst* npest*
 		quietly polyspline grid, gen(gridpoint) refpts($xmin($x_distance)$xmax) power($powerx) 
-        quietly polyspline $expvar, gen(basisexpvar) refpts($xmin($x_distance)$xmax) power($powerx) 
-		quietly polyspline $inst, gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz) 
-		
-		mata : npiv_estimation("$depvar", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+        quietly polyspline $expvar if `touse', gen(basisexpvar) refpts($xmin($x_distance)$xmax) power($powerx) 
+		capture quietly polyspline $expvar if 1-`touse', gen(tempbasis) refpts($xmin($x_distance)$xmax) power($powerx) 
+		quietly polyspline $inst if `touse', gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz) 
+
+		mata : npiv_estimation("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
 		}
 		}
 				
@@ -137,9 +147,10 @@ program define npivreg
 		svmat `Ycv', name(npcv)  // NPIV estimate on x for cross validation
 		svmat `Yhat', name(npest)  // NPIV estimate on grid
 		svmat `p', name(`P')       // basis functions for x (not returned)
-		svmat `b', name(beta)    // coefficients for series estimate (not returned)
+		svmat `b', name(beta)    // coefficients for series estimate
 		label variable npest "NPIV fitted value"
-		drop basisexpvar* basisinst* gridpoint*
+		capture drop Y basisexpvar* basisinst* gridpoint* 
+		capture drop tempbasis*
 end
 
 
@@ -153,16 +164,19 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
     real vector Y, b, Yhat, Ycv
 	real matrix P, Q, MQ
 	// load bases from Stata variable space
-	P 		= st_data(., basisname1)
-	Q 		= st_data(., basisname2)
-	Y 		= st_data(., vname)
+	P 		= st_data(., basisname1, 0)
+	Q 		= st_data(., basisname2, 0)
+	
+	if (_st_varindex("tempbasis1") == .) T = 0;;
+	if (_st_varindex("tempbasis1") != .) T = st_data(., "tempbasis*", 0);;
+	Y 		= st_data(., vname, 0)
 	
 	// compute the estimate by the closed form solution
 	MQ 		= Q*invsym(Q'*Q)*Q'
 	b  		= invsym(P'*MQ*P)*P'*MQ*Y
-	GP      = st_data(., "gridpoint*") // spline bases on fine grid points
+	GP      = st_data(., "gridpoint*",0) // spline bases on fine grid points
 	Yhat 	= GP*b //fitted value on fine grid
-	Ycv     = P*b //fitted value on X
+	Ycv     = T*b //fitted value on X if 1 - touse
 		
 	// store the mata results into the Stata matrix space
 	// st_matrix("bb", b)
@@ -181,9 +195,11 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		real matrix P, Q
 		real scalar n
 
-        P 		= st_data(., basisname1)
-		Q 		= st_data(., basisname2)
-		Y 		= st_data(., vname)
+        P 		= st_data(., basisname1, 0)
+		Q 		= st_data(., basisname2, 0)
+		if (_st_varindex("tempbasis1") == .) T = 0;;
+		if (_st_varindex("tempbasis1") != .) T = st_data(., "tempbasis*", 0);;
+		Y 		= st_data(., vname, 0)
  		n       = cols(P)
 		
 	    // optimisation routine for the minimisation problem
@@ -211,7 +227,7 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		   
 		GP      = st_data(., "gridpoint*") // spline bases on fine grid points
 		Yhat 	= GP*beta' //fitted value on fine grid
-		Ycv     = P*beta' //fitted value on X
+		Ycv     = T*beta' //fitted value on X
 		
 		// store the mata results into the Stata matrix space
 		st_matrix(bname, beta)
@@ -229,9 +245,11 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
 		real matrix P, Q
 		real scalar n
 
-        P 		= st_data(., basisname1)
-		Q 		= st_data(., basisname2)
-		Y 		= st_data(., vname)
+        P 		= st_data(., basisname1, 0)
+		Q 		= st_data(., basisname2, 0)
+		if (_st_varindex("tempbasis1") == .) T = 0;;
+		if (_st_varindex("tempbasis1") != .) T = st_data(., "tempbasis*", 0);;
+		Y 		= st_data(., vname, 0)
  		n       = cols(P)
 		
 	    // optimisation routine for the minimisation problem
@@ -259,7 +277,7 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
 		   
 		GP      = st_data(., "gridpoint*") // spline bases on fine grid points
 		Yhat 	= GP*beta' //fitted value on fine grid
-		Ycv     = P*beta' //fitted value on X
+		Ycv     = T*beta' //fitted value on X
 		
 		// store the mata results into the Stata matrix space
 		st_matrix(bname, beta)
