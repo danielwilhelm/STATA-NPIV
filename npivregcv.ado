@@ -1,6 +1,6 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with cross validation
-This command requires `npivreg' and `npivreg_optional' commands
+This command requires `npivreg.ado' file. 
 
 Author : Dongwoo Kim (University College London)
 
@@ -87,15 +87,15 @@ global knots `i'
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
-	npivreg_optional $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct) increasing
+	npivreg $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct) increasing
 	}
 	
 	else if "`decreasing'" == "decreasing" {
-	npivreg_optional $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct) decreasing
+	npivreg $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct) decreasing
 	}
 	
 	else {
-	npivreg_optional $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct)
+	npivreg $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct)
 	}
 }
 
@@ -109,7 +109,7 @@ else {
 	error 498
 	}
 	else {
-	npivreg_optional $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct) polynomial
+	npivreg $dep $exp $iv if splitdummy == $group, power_exp($power1) power_inst($power2) num_exp($knots) num_inst($knots) pctile($pct) polynomial
 	}
 }
 
