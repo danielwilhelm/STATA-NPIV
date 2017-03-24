@@ -1,5 +1,7 @@
-# STATA-NPIV (Author : Dongwoo Kim and Daniel Wilhelm)
-This project provides a Stata command `npivreg` for nonparametric estimation of instrumental variable (NPIV) models with or without monotonicity restrictions and 'npivregcv' for cross validation.
+# STATA-NPIV 
+Authors : Dongwoo Kim and Daniel Wilhelm
+
+This project provides a Stata command `npivreg` for nonparametric estimation of instrumental variable (NPIV) models with or without monotonicity restrictions and `npivregcv` for cross validation.
 
 Files contained in this package:
 
