@@ -4,7 +4,7 @@ This command requires `npivreg.ado' file.
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.0.0 24th Mar 2017
+Version 1.0.1 25th Mar 2017
 
 This program estimates the function g(x) in
 
@@ -64,6 +64,7 @@ global pct `pctile'
 quietly summarize $dep
 local N = max( round(r(N)^(1/5)/2), 5)
 
+set seed 1004
 gen double samplesplit = rnormal(0, 1)
 quietly summarize samplesplit, detail
 local med = r(p50)
@@ -159,5 +160,6 @@ else {
 	}
 }
 
+capture drop splitdummy samplesplit
 
 end
