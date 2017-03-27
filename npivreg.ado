@@ -105,7 +105,7 @@ program define npivreg
 		}
 		// check whether decreasing option is used
 		else if "`decreasing'" == "decreasing" {
-		display "Basis for X: B-spline of order `2'"
+		display "Basis for X: B-spline of order 2"
 		display "Basis for Z: B-spline of order `power_inst'"
 		display "Number of equally spaced knots for X: `num_exp'"
 		display "Number of equally spaced knots for Z: `num_inst'"
