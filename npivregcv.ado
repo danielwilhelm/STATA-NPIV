@@ -4,7 +4,7 @@ This command requires `npivreg.ado' file.
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.0.1 25th Mar 2017
+Version 1.0.2 27th Mar 2017
 
 This program estimates the function g(x) in
 
@@ -62,7 +62,7 @@ global power2 `power_inst'
 global pct `pctile'
 				
 quietly summarize $dep
-local N = max( round(r(N)^(1/5)/2), 5)
+local N = max( round(r(N)^(1/5)/2), 4)
 
 set seed 1004
 gen double samplesplit = rnormal(0, 1)
@@ -80,6 +80,8 @@ mata : Y      = (Y0, Y1)
 mata : fitted = J(rows(Y1), 2*`N', 0) 
 
 forvalues j = 0/1   {
+display " "
+display "Execute cross validation for subsample `j'"
 forvalues i = 3/`N' {
 global group `j'
 global knots `i'
@@ -130,6 +132,8 @@ mata : opt_knot = select(1..cols(mse), s)
 mata : st_numscalar("opt_knot", opt_knot)
 
 global opt_knot = opt_knot
+display " "
+display "Run NPIV regression with the optimal knots"
 
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
@@ -160,6 +164,7 @@ else {
 	}
 }
 
+display "The number of optimal knots = " opt_knot
 capture drop splitdummy samplesplit
 
 end
