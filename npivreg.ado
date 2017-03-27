@@ -1,7 +1,7 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with shape restrictions
 
-Version 1.0.0 24th Mar 2017
+Version 1.0.2 27th Mar 2017
 
 This program estimates the function g(x) in
 
@@ -12,12 +12,14 @@ X is a scalar endogenous variable ("expvar"), and
 Z a scalar instrument ("inst").
 
 Syntax:
-npivreg depvar expvar inst [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing] 
+npivreg depvar expvar inst [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) pctile(#) polynomial increasing decreasing] 
 
 where power_exp is the power of basis functions for x (defalut = 2),
 power_inst is the power of basis functions for z (defalut = 3),
 num_exp is the number of knots for x (defalut = 2),
 num_inst is the number of knots for z (defalut = 3), 
+pctile indicates the start and end points of spline basis (default = 5) and
+given pctile(a), a/100 to (1-a) percentiles are used in generating spline basis for X.
 polonomial option gives the basis functions for polynomial spline (default is bslpline).
 
 # shape restrictions (bspline is used - power of bslpine for "expvar" is fixed to 2.
@@ -48,10 +50,6 @@ program define npivreg
 		capture drop basisexpvar* basisinst* gridpoint* tempbasis*
 		capture drop npest* npcv* grid* beta*
 		
-		// check whether required commands are installed
-		// capture ssc install bspline
-		// capture ssc install polyspline
-		
 		// macro assignments		
 		global mylist `varlist'
 		global depvar   : word 1 of $mylist
@@ -71,6 +69,12 @@ program define npivreg
 		global xmin = `xlpct'
 		global xmax = `xupct'
 		global x_distance = ($xmax - $xmin)/(`num_exp' - 1 )
+		local qtile = `pctile'/100
+		local 1qtile = 1 - `pctile'/100
+		
+		display "Number of equally spaced knots for X: `num_exp'"
+		display "Number of equally spaced knots for Z: `num_inst'"
+		display "Domain over which the estimator is computed: `qtile'-quantile of X to `1qtile'-quantile of X"
 		
 		//equidistance nodes (knots) are generated for z from pctile (default = 5) to upctile(default = 95)
 		quietly summarize $inst
@@ -79,47 +83,58 @@ program define npivreg
 		global z_distance = ($zmax - $zmin)/(`num_inst' - 1)
         
 		//fine grid for fitted value of g(X)
-		mata : grid = rangen($xmin, $xmax, rows(st_data(., "$depvar")))
-		mata : st_addvar("float", "grid")
-		mata : st_store(., "grid", grid)
+		quietly mata : grid = rangen($xmin, $xmax, rows(st_data(., "$depvar")))
+		quietly mata : st_addvar("float", "grid")
+		quietly mata : st_store(., "grid", grid)
 		
 		// generate bases for X and Z
 	    // If the option "polynomial" is not typed, bspline is used.
 		if "`polynomial'" == "" {
 		// check whether increasing option is used        
 		if "`increasing'" == "increasing" {
+		display "Basis for X: B-spline of order 2"
+		display "Basis for Z: B-spline of order `power_inst'"
+		display "Shape restriction (increasing) is imposed"
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power(2) 
         quietly bspline if `touse', xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power(2)
 		capture quietly bspline if 1-`touse', xvar($expvar) gen(tempbasis) knots($xmin($x_distance)$xmax) power(2)
 		quietly bspline if `touse', xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
 				
-		mata : npiv_optimize("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+		mata : npiv_optimize("Y", "basisexpvar*", "basisinst*", "`b'", "`Yhat'", "`Ycv'")
 		}
 		// check whether decreasing option is used
 		else if "`decreasing'" == "decreasing" {
+		display "Basis for X: B-spline of order `2'"
+		display "Basis for Z: B-spline of order `power_inst'"
+		display "Shape restriction (decreasing) is imposed"
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power(2) 
         quietly bspline if `touse', xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power(2)
 		capture quietly bspline if 1-`touse', xvar($expvar) gen(tempbasis) knots($xmin($x_distance)$xmax) power(2)
 		quietly bspline if `touse', xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
 		
-		mata : npiv_optimize_dec("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+		mata : npiv_optimize_dec("Y", "basisexpvar*", "basisinst*", "`b'", "`Yhat'", "`Ycv'")
 		}
 		// procedure without shape restrictions
 		else {
+		display "Basis for X: B-spline of order `power_exp'"
+		display "Basis for Z: B-spline of order `power_inst'"
+		display "no shape restriction"
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx) 
         quietly bspline if `touse', xvar($expvar) gen(basisexpvar) knots($xmin($x_distance)$xmax) power($powerx)
 		capture quietly bspline if 1-`touse', xvar($expvar) gen(tempbasis) knots($xmin($x_distance)$xmax) power($powerx)
 		quietly bspline if `touse', xvar($inst) gen(basisinst) knots($zmin($z_distance)$zmax) power($powerz)
 		
-		mata : npiv_estimation("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+		mata : npiv_estimation("Y", "basisexpvar*", "basisinst*", "`b'", "`Yhat'", "`Ycv'")
 		}
 		}
 		
 		// If polyspline is typed
         else {
+		display "Basis for X: polynomial spline of order `power_exp'"
+		display "Basis for Z: polynomial spline of order `power_inst'"
 		// check whether increasing option is used
 		if("`increasing'" == "increasing"){
 			display in red "shape restriction (increasing) not allowed"	
@@ -139,15 +154,17 @@ program define npivreg
 		capture quietly polyspline $expvar if 1-`touse', gen(tempbasis) refpts($xmin($x_distance)$xmax) power($powerx) 
 		quietly polyspline $inst if `touse', gen(basisinst) refpts($zmin($z_distance)$zmax) power($powerz) 
 
-		mata : npiv_estimation("Y", "basisexpvar*", "basisinst*", "`b'", "`p'", "`Yhat'", "`Ycv'")
+		mata : npiv_estimation("Y", "basisexpvar*", "basisinst*", "`b'", "`Yhat'", "`Ycv'")
 		}
 		}
 				
 		// convert the Stata matrices to Stata variable
 		svmat `Ycv', name(npcv)  // NPIV estimate on x for cross validation
 		svmat `Yhat', name(npest)  // NPIV estimate on grid
-		svmat `p', name(`P')       // basis functions for x (not returned)
 		svmat `b', name(beta)    // coefficients for series estimate
+		rename npcv1 npcv
+		rename npest1 npest
+		
 		label variable npest "NPIV fitted value"
 		capture drop Y basisexpvar* basisinst* gridpoint* 
 		capture drop tempbasis*
@@ -158,7 +175,7 @@ end
 mata:
 void npiv_estimation(string scalar vname, string scalar basisname1, 
                      string scalar basisname2, string scalar bname, 
-					 string scalar pname, string scalar estname1, string scalar estname2)
+					 string scalar estname1, string scalar estname2)
 
 {
     real vector Y, b, Yhat, Ycv
@@ -181,7 +198,6 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
 	// store the mata results into the Stata matrix space
 	// st_matrix("bb", b)
 	st_matrix(bname, b)
-	st_matrix(pname, P)
 	st_matrix(estname1, Yhat)           
 	st_matrix(estname2, Ycv)           
 }
@@ -189,7 +205,7 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
 // Define a Mata function computing NPIV estimates with increasing shape restriction
 void npiv_optimize(string scalar vname, string scalar basisname1, 
                    string scalar basisname2, string scalar bname, 
-				   string scalar pname, string scalar estname1, string scalar estname2)
+				   string scalar estname1, string scalar estname2)
 					 
 {    	real vector Y, beta, Yhat, Ycv
 		real matrix P, Q
@@ -231,7 +247,6 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		
 		// store the mata results into the Stata matrix space
 		st_matrix(bname, beta)
-		st_matrix(pname, P)
 		st_matrix(estname1, Yhat)
 		st_matrix(estname2, Ycv)
 }
@@ -239,7 +254,7 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 // Define a Mata function computing NPIV estimates with decreasing shape restriction
 void npiv_optimize_dec(string scalar vname, string scalar basisname1, 
                        string scalar basisname2, string scalar bname, 
-				       string scalar pname, string scalar estname1, string scalar estname2)
+				       string scalar estname1, string scalar estname2)
 					 
 {    	real vector Y, beta, Yhat, Ycv
 		real matrix P, Q
@@ -281,7 +296,6 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
 		
 		// store the mata results into the Stata matrix space
 		st_matrix(bname, beta)
-		st_matrix(pname, P)
 		st_matrix(estname1, Yhat)
 		st_matrix(estname2, Ycv)
 }
