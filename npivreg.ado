@@ -72,8 +72,6 @@ program define npivreg
 		local qtile = `pctile'/100
 		local 1qtile = 1 - `pctile'/100
 		
-		display "Number of equally spaced knots for X: `num_exp'"
-		display "Number of equally spaced knots for Z: `num_inst'"
 		display "Domain over which the estimator is computed: `qtile'-quantile of X to `1qtile'-quantile of X"
 		
 		//equidistance nodes (knots) are generated for z from pctile (default = 5) to upctile(default = 95)
@@ -94,6 +92,8 @@ program define npivreg
 		if "`increasing'" == "increasing" {
 		display "Basis for X: B-spline of order 2"
 		display "Basis for Z: B-spline of order `power_inst'"
+		display "Number of equally spaced knots for X: `num_exp'"
+		display "Number of equally spaced knots for Z: `num_inst'"
 		display "Shape restriction (increasing) is imposed"
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power(2) 
@@ -107,6 +107,8 @@ program define npivreg
 		else if "`decreasing'" == "decreasing" {
 		display "Basis for X: B-spline of order `2'"
 		display "Basis for Z: B-spline of order `power_inst'"
+		display "Number of equally spaced knots for X: `num_exp'"
+		display "Number of equally spaced knots for Z: `num_inst'"
 		display "Shape restriction (decreasing) is imposed"
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power(2) 
@@ -120,6 +122,8 @@ program define npivreg
 		else {
 		display "Basis for X: B-spline of order `power_exp'"
 		display "Basis for Z: B-spline of order `power_inst'"
+		display "Number of equally spaced knots for X: `num_exp'"
+		display "Number of equally spaced knots for Z: `num_inst'"
 		display "no shape restriction"
 		capture drop basisexpvar* basisinst* npest*
 		quietly bspline, xvar(grid) gen(gridpoint) knots($xmin($x_distance)$xmax) power($powerx) 
@@ -135,6 +139,9 @@ program define npivreg
         else {
 		display "Basis for X: polynomial spline of order `power_exp'"
 		display "Basis for Z: polynomial spline of order `power_inst'"
+		display "Number of equally spaced knots for X: `num_exp'"
+		display "Number of equally spaced knots for Z: `num_inst'"
+		display "no shape restriction"
 		// check whether increasing option is used
 		if("`increasing'" == "increasing"){
 			display in red "shape restriction (increasing) not allowed"	
