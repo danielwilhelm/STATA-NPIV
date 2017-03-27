@@ -31,7 +31,4 @@ generate y =  true_y + u
 // and coefficients of series estimation
 npivregcv y x z, pctile(5) increasing
 
-// show optimal knots by cross validation
-display opt_knot
-
 quietly line true_y x, sort || line npest grid
