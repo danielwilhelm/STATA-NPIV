@@ -25,7 +25,7 @@ Files contained in this package:
 4. Use the commands `npivreg` and `npivregcv` as described below.
 
 ## Syntax
-The command `npivreg` estimates the function g(x) in the NPIV model
+The commands `npivreg` and `npivregcv` estimate the function g(x) in the NPIV model
 
 ```
 Y = g(X) + e      E[e | Z] = 0
