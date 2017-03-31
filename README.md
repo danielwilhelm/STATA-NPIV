@@ -22,7 +22,7 @@ Files contained in this package:
 	```
 
 3. Change into the directory containing this package.
-4. Use the command `npivreg` as described below.
+4. Use the commands `npivreg` and `npivregcv` as described below.
 
 ## Syntax
 The command `npivreg` estimates the function g(x) in the NPIV model
