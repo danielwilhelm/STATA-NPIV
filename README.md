@@ -28,13 +28,14 @@ Files contained in this package:
 The commands `npivreg` and `npivregcv` estimate the function g(x) in the NPIV model
 
 ```
-Y = g(X) + e      E[e | Z] = 0
+Y = g(X) + W'γ+ e      E[e | Z] = 0
 ```
 
 where
 - Y is a scalar dependent variable (`depvar`) 
 - X is a scalar endogenous variable (`expvar`)
-- Z a scalar instrument (`inst`)
+- Z is a scalar instrument (`inst`)
+- W is a vector of exogeneous covariats ("exovar"), and 
 
 Syntax:
 
@@ -64,28 +65,28 @@ The command `npivregcv` estimates the function g(x) in the NPIV model using cros
 
 ## Output
 
-The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest1`. In addition, `npivregcv` stores the cross-validated number of knots in the variable `opt_knot`.
+The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest`. In addition, `npivregcv` stores the cross-validated number of knots in the variable `opt_knot`. The vector of coefficients is stored in `beta`.
 
 
 ## Examples
 
 NPIV estimation with default options:
 ```
-npivreg y x z
+npivreg y x z w
 ```
 
 NPIV estimation with B-spline bases of powers 2 and 3, and 3 and 4 knots (for X and Z, respectively):
 ```
-npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4)
+npivreg y x z w, power_exp(2) power_inst(3) num_exp(3) num_inst(4)
 ```
 
 NPIV estimation with B-spline bases of powers 2 and 3, and 3 and 4 knots (for X and Z, respectively), imposing that the estimator of g(x) is increasing:
 ```
-npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) increasing
+npivreg y x z w, power_exp(2) power_inst(3) num_exp(3) num_inst(4) increasing
 ```
 NPIV estimation using cross-validation to determine the optimal number of knots, imposing that the estimator of g(x) is increasing:
 ```
-npivregcv y x z, power_exp(2) power_inst(3) increasing
+npivregcv y x z w, power_exp(2) power_inst(3) increasing
 ```
 
 
