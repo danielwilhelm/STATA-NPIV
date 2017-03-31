@@ -35,7 +35,7 @@ where
 - Y is a scalar dependent variable (`depvar`) 
 - X is a scalar endogenous variable (`expvar`)
 - Z is a scalar instrument (`inst`)
-- W is a vector of exogeneous covariats ("exovar"), and 
+- W is a vector of exogeneous covariats (`exovar`), and 
 
 Syntax:
 
