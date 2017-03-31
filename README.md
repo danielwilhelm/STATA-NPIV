@@ -5,11 +5,11 @@ This project provides two Stata commands for nonparametric estimation of instrum
 
 Files contained in this package:
 
-- The file 'npivreg.ado' contains the `npivreg` command.
-- The file 'npivregcv.ado' contains the `npivregcv` command.
-- The file 'example_no_shape_restriction.do' contains an example that simulates data and then estimates the NPIV model without imposing the monotonicity restriction.
-- The file 'example_shape_restriction.do' contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction.
-- The file 'mcsimulation_cv.do' contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction and using cross-validated tuning parameters.
+- The file `npivreg.ado` contains the `npivreg` command.
+- The file `npivregcv.ado` contains the `npivregcv` command.
+- The file `example_no_shape_restriction.do` contains an example that simulates data and then estimates the NPIV model without imposing the monotonicity restriction.
+- The file `example_shape_restriction.do` contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction.
+- The file `mcsimulation_cv.do` contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction and using cross-validated tuning parameters.
 
 
 ## Installation
@@ -59,12 +59,12 @@ when shape restrictions are not imposed.
 
 If options are left unspecified, the command runs on the default settings.
 
-The command `npivregcv` estimates the function g(x) in the NPIV model using cross-validation to find the optimal number of knots (setting `num_exp=num_inst').
+The command `npivregcv` estimates the function g(x) in the NPIV model using cross-validation to find the optimal number of knots (setting `num_exp=num_inst`).
 
 
 ## Output
 
-The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest1'. In addition, `npivregcv` stores the cross-validated number of knots in the variable `opt_knot'.
+The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest1`. In addition, `npivregcv` stores the cross-validated number of knots in the variable `opt_knot`.
 
 
 ## Examples
