@@ -1,7 +1,7 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with shape restrictions
 
-Version 1.0.3 31st Mar 2017
+Version 1.0.4 9th May 2017
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -10,7 +10,7 @@ Y = g(X) + W'γ + e with E(e|Z)=0
 where Y is a scalar dependent variable ("depvar"), 
 X is a scalar endogenous variable ("expvar"), 
 W is a vector of exogeneous covariats ("exovar"), and 
-Z a scalar instrument ("inst").
+Z is a scalar instrument ("inst").
 
 Syntax:
 npivreg depvar expvar inst exovar [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) pctile(#) polynomial increasing decreasing] 
@@ -199,7 +199,7 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
 	if (_st_varindex(ename1) == .) Q = Q0;;
 	if (_st_varindex(ename1) != .) st_view(W=., ., ename2, touse);;
 	if (_st_varindex(ename1) != .) P = (P0, W);;
-	if (_st_varindex(ename1) != .) Q = (Q0, W);;
+	if (_st_varindex(ename1) != .) Q = (Q0, tensor(Q0, W));;
 		
 	if (_st_varindex("tempbasis1") == .) T = 0;;
 	if (_st_varindex("tempbasis1") != .) T = st_data(., "tempbasis*", 0);;
@@ -239,7 +239,7 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		if (_st_varindex(ename1) == .) Q = Q0;;
 		if (_st_varindex(ename1) != .) st_view(W=., ., ename2, touse);;
 		if (_st_varindex(ename1) != .) P = (P0, W);;
-		if (_st_varindex(ename1) != .) Q = (Q0, W);;
+		if (_st_varindex(ename1) != .) Q = (Q0, tensor(Q0, W));;
 		
 		if (_st_varindex("tempbasis1") == .) T = 0;;
 		if (_st_varindex("tempbasis1") != .) T = st_data(., "tempbasis*", 0);;
@@ -303,7 +303,7 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
 		if (_st_varindex(ename1) == .) Q = Q0;;
 		if (_st_varindex(ename1) != .) st_view(W=., ., ename2, touse);;
 		if (_st_varindex(ename1) != .) P = (P0, W);;
-		if (_st_varindex(ename1) != .) Q = (Q0, W);;
+		if (_st_varindex(ename1) != .) Q = (Q0, tensor(Q0, W));;
 		
 		if (_st_varindex("tempbasis1") == .) T = 0;;
 		if (_st_varindex("tempbasis1") != .) T = st_data(., "tempbasis*", 0);;
@@ -392,4 +392,20 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
 		val = (Y - P*bb')'*MQ*(Y - P*bb')
 }
 
+ real matrix tensor(real matrix Q0, real matrix W)
+ 
+ {
+ n   = cols(Q0)
+ QW1 = Q0[,1]:*W 
+ for (i = 2; i<=n; i++) {
+		   QW  = Q0[,i]:*W
+		   QW1 = (QW1, QW)
+		   }
+ 
+ return(QW1)
+ }
+ 
  end
+
+
+ 
