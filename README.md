@@ -91,4 +91,5 @@ npivregcv y x z w, power_exp(2) power_inst(3) increasing
 
 
 # Reference
+[Chetverikov, D. and Wilhelm, D. (2017), "Nonparametric Instrumental Variable Estimation Under Monotonicity", Econometrica, 85(4), p. 1303-1320](http://onlinelibrary.wiley.com/doi/10.3982/ECTA13639/full)
 [Chetverikov, D. and Wilhelm, D. (2017), "Nonparametric Instrumental Variable Estimation Under Monotonicity", cemmap working paper](http://www.ucl.ac.uk/~uctpdwi/papers/cwp141717.pdf)
