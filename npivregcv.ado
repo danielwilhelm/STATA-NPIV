@@ -4,7 +4,7 @@ This command requires `npivreg.ado' file.
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.0.3 31st Mar 2017
+Version 1.1.0 31st Aug 2017
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -48,13 +48,14 @@ when shape restrictions are not imposed.
 If unspecified, the command runs on a default setting.
 */
 
-program define npivregcv
-		version 12
+program define npivregcv, eclass
+		version 11
 		
 // initializations
-syntax varlist(numeric) [, power_exp(integer 2) power_inst(integer 3) pctile(integer 5) polynomial increasing decreasing]
+syntax varlist(numeric fv) [, power_exp(integer 2) power_inst(integer 3) pctile(integer 5) maxknot(integer 5) polynomial increasing decreasing]
 
-tempvar Y1 Y0 samplesplit splitdummy opt_knot
+tempvar Y1 Y0 samplesplit splitdummy xlpct xupct 
+tempname opt_knot
 
 gettoken dep varlist : varlist
 gettoken exp varlist : varlist
@@ -63,10 +64,15 @@ local exo `varlist'
 
 local power1 `power_exp'
 local power2 `power_inst'
-local pct `pctile'
+local upctile = 100 - `pctile'
+				
+quietly egen `xlpct' = pctile(`exp'), p(`pctile')
+quietly egen `xupct' = pctile(`exp'), p(`upctile')
+local xmin = `xlpct'
+local xmax = `xupct'
 				
 quietly summarize `dep'
-local N = max( round(r(N)^(1/5)/2), 4)
+local N = max( r(N)^(1/5)/2, `maxknot')
 
 set seed 1004
 gen double `samplesplit' = rnormal(0, 1)
@@ -80,29 +86,32 @@ quietly gen `Y0' = `dep' if 1-`splitdummy'
 mata : mse    = J(2, `N', 10^5)
 mata : Y1     = st_data(., "`Y1'", 0)
 mata : Y0     = st_data(., "`Y0'", 0)
-mata : Y      = (Y0, Y1)
-mata : fitted = J(rows(Y1), 2*`N', 0) 
+mata : fitted1 = J(rows(Y1),`N', 0) 
+mata : fitted0 = J(rows(Y0),`N', 0) 
 
-forvalues j = 0/1   {
+
 display " "
-display "Execute cross validation for subsample `j'"
-forvalues i = 3/`N' {
-local group `j'
-local knots `i'
+display "Execute cross validation for subsample 0"
 
+forvalues i = 3/`N' {
+local knots `i'
+local x_distance = (`xmax' - `xmin')/(`knots' - 1 )	
 
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == `group', power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pct') increasing
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
+	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else if "`decreasing'" == "decreasing" {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == `group', power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pct') decreasing
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
+	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == `group', power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pct')
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
+	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(`power1')
 	}
 }
 
@@ -116,16 +125,75 @@ else {
 	error 498
 	}
 	else {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == `group', power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pct') polynomial
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
+	quietly polyspline `exp' if `splitdummy' == 1, gen(temp1basis) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
+	
+	}
+}
+			
+
+mata : b = st_matrix("e(b)")'			
+mata : T = st_data(., "temp1basis*",0)
+mata : n = cols(T)
+mata : fitted1[,`i'] = T*b[1..n]
+mata : mse[1, `i'] = sum( (Y1  - fitted1[,`i']):^2)/rows(Y1)
+
+capture drop grid* 
+capture drop temp1basis* 
+capture drop npest*
+}
+
+display " "
+display "Execute cross validation for subsample `1'"
+
+forvalues i = 3/`N' {
+local knots `i'
+local x_distance = (`xmax' - `xmin')/(`knots' - 1 )	
+
+if "`polynomial'" == "" {
+	// check whether increasing option is used        
+	if "`increasing'" == "increasing" {
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
+	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(2)
+	}
+	
+	else if "`decreasing'" == "decreasing" {
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
+	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(2)
+	}
+	
+	else {
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
+	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(`power1')
 	}
 }
 
-
-mata : fitted[,(`i' + `j'*`N')] = st_data(., "npcv",0)
-mata : mse[(`j'+1), `i'] = sum((Y[,(`j'+1)] - fitted[,(`i' + `j'*`N')]):^2)/rows(Y1)
-
-capture drop beta* grid* npcv* npest*
+else {
+	if "`increasing'" == "increasing" {
+	display in red "shape restriction (increasing) not allowed"	
+	error 498
+	}
+	else if "`decreasing'" == "decreasing" {
+	display in red "shape restriction (decreasing) not allowed"	
+	error 498
+	}
+	else {
+	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
+	quietly polyspline `exp' if `splitdummy' == 0, gen(temp0basis) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
+	
+	}
 }
+			
+
+mata : b = st_matrix("e(b)")'			
+mata : T = st_data(., "temp0basis*",0)
+mata : n = cols(T)
+mata : fitted0[,`i'] = T*b[1..n]
+mata : mse[2, `i'] = sum( (Y0  - fitted0[,`i']):^2)/rows(Y0)
+
+capture drop grid* 
+capture drop temp0basis* 
+capture drop npest*
 }
 
 mata : criterion = colsum(mse)
@@ -140,15 +208,15 @@ display "Run NPIV regression with the optimal knots"
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
-	npivreg `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pct') increasing
+	npivreg `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile') increasing
 	}
 	
 	else if "`decreasing'" == "decreasing" {
-	npivreg `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pct') decreasing
+	npivreg `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile') decreasing
 	}
 	
 	else {
-	npivreg `dep' `exp' `iv' `exo', power_exp(`power1') power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pct')
+	npivreg `dep' `exp' `iv' `exo', power_exp(`power1') power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile')
 	}
 }
 
@@ -162,10 +230,12 @@ else {
 	error 498
 	}
 	else {
-	npivreg `dep' `exp' `iv' `exo', power_exp(`power1') power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pct') polynomial
+	npivreg `dep' `exp' `iv' `exo', power_exp(`opt_knot') power_inst(`opt_knot') pctile(`pctile') polynomial
 	}
 }
 
 display "The number of optimal knots = " `opt_knot'
 
+ereturn local cmd "npivregcv" 
+ereturn local title "Nonparametric IV regression with cross-validation" 
 end
