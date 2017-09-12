@@ -35,13 +35,13 @@ where
 - Y is a scalar dependent variable (`depvar`) 
 - X is a scalar endogenous variable (`expvar`)
 - Z is a scalar instrument (`inst`)
-- W is a vector of exogeneous covariats (`exovar`), and 
+- W is a vector of exogeneous covariats (`exovar`) - optional (need not be included), and 
 
 Syntax:
 
 ```
-npivreg depvar expvar inst exovar [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
-npivregcv depvar expvar inst exovar [if] [in] [, power_exp(#) power_inst(#) polynomial increasing decreasing]
+npivreg depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
+npivregcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) polynomial increasing decreasing]
 ```
 
 where
