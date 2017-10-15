@@ -1,7 +1,7 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with shape restrictions
 
-Version 1.1.0 31st Aug 2017
+Version 1.1.1 30th Sep 2017
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -44,7 +44,7 @@ program define npivreg, eclass
 		marksample touse
 		
 		// generate temporary names to avoid any crash in Stata spaces
-		tempvar xlpct xupct zlpct zupct b Y Yhat
+		tempvar b Y Yhat xlpct xupct
 		
 		// eliminate any former NPIV regression results
 		capture drop basisexpvar* 
@@ -80,31 +80,28 @@ program define npivreg, eclass
 		quietly summarize `Y' if `touse'
 		local N = r(N)
 		
-		//equidistance nodes (knots) are generated for x from pctile (default = 5) to upctile(default = 95)
-		quietly egen `xlpct' = pctile(`expvar'), p(`pctile')
-		quietly egen `xupct' = pctile(`expvar'), p(`upctile')
-		quietly egen `zlpct' = pctile(`inst'), p(`pctile')
-		quietly egen `zupct' = pctile(`inst'), p(`upctile')
-		local xmin = `xlpct'
-		local xmax = `xupct'
+		//equidistance nodes (knots) are generated for x 
+		quietly summarize `expvar'
+		local xmin = r(min)
+		local xmax = r(max)
 		local x_distance = (`xmax' - `xmin')/(`numx' - 1 )
 		local qtile = `pctile'/100
 		local 1qtile = 1 - `pctile'/100
 		
 		display "Domain over which the estimator is computed: `qtile'-quantile of X to `1qtile'-quantile of X"
 		
-		//equidistance nodes (knots) are generated for z from pctile (default = 5) to upctile(default = 95)
+		//equidistance nodes (knots) are generated for z
 		quietly summarize `inst'
-		local zmin = `zlpct'
-		local zmax = `zupct'
+		local zmin = r(min)
+		local zmax = r(max)
 		local z_distance = (`zmax' - `zmin')/(`numz' - 1)
         
-		preserve
-		
-		drop if `expvar' < `xmin' | `expvar' > `xmax'
-		
 		//fine grid for fitted value of g(X)
-		quietly mata : grid = rangen(`xmin', `xmax', rows(st_data(., "`depvar'")))
+		quietly egen `xlpct' = pctile(`expvar'), p(`pctile')
+		quietly egen `xupct' = pctile(`expvar'), p(`upctile')
+		local gmin = `xlpct'
+		local gmax = `xupct'
+		quietly mata : grid = rangen(`gmin', `gmax', rows(st_data(., "`depvar'")))
 		quietly mata : st_addvar("float", "grid")
 		quietly mata : st_store(., "grid", grid)
 		
@@ -193,11 +190,8 @@ program define npivreg, eclass
 		}
 		}
 		
-		restore
-		
 		// convert the Stata matrices to Stata variable
 		svmat `Yhat', name(npest)  // NPIV estimate on grid
-		getmata grid, force
 		
 		
 		ereturn post `b'
@@ -207,6 +201,8 @@ program define npivreg, eclass
 		ereturn scalar knotexp    = `num_exp'
 		ereturn scalar knotinst   = `num_inst'
 		ereturn scalar pct        = `pctile'
+		ereturn scalar gmin       = `gmin'
+		ereturn scalar gmax       = `gmax'
 		ereturn scalar xmin       = `xmin'
 		ereturn scalar xmax       = `xmax'
 		ereturn scalar zmin       = `zmin'
