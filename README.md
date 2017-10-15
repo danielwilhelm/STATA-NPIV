@@ -41,7 +41,7 @@ Syntax:
 
 ```
 npivreg depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
-npivregcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) polynomial increasing decreasing]
+npivregcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) maxknot(#) polynomial increasing decreasing]
 ```
 
 where
@@ -49,6 +49,7 @@ where
 - `power_inst` is the power of basis functions for Z (default = 3).
 - `num_exp` is the number of knots for X (default = 2) when using a B-spline basis.
 - `num_inst` is the number of knots for Z (default = 3) when using a B-spline basis.
+- `maxknot` is the maximum number of knots upto which cross-validation is executed. (default = 5)
 - adding the `polynomial` option makes the estimator use a polynomial spline basis (default is B-spline basis).
 - adding the `increasing` option makes the estimator impose the constraint that the estimator of g(x) is increasing in x.
 - adding the `decreasing` option makes the estimator impose the constraint that the estimator of g(x) is decreasing in x.
