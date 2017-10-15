@@ -4,7 +4,7 @@ This command requires `npivreg.ado' file.
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.1.0 31st Aug 2017
+Version 1.1.1 30th Sep 2017
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -83,7 +83,7 @@ gen byte `splitdummy' = (`samplesplit' > `med')
 quietly gen `Y1' = `dep' if `splitdummy'
 quietly gen `Y0' = `dep' if 1-`splitdummy'
 
-mata : mse    = J(2, `N', 10^5)
+mata : mse    = J(2, `N', 10^10)
 mata : Y1     = st_data(., "`Y1'", 0)
 mata : Y0     = st_data(., "`Y0'", 0)
 mata : fitted1 = J(rows(Y1),`N', 0) 
@@ -144,7 +144,7 @@ capture drop npest*
 }
 
 display " "
-display "Execute cross validation for subsample `1'"
+display "Execute cross validation for subsample 1"
 
 forvalues i = 3/`N' {
 local knots `i'
