@@ -1,19 +1,19 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with shape restrictions
 
-Version 1.1.1 30th Sep 2017
+Version 1.1.2 25th Oct 2017
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
-Y = g(X) + W'γ + e with E(e|Z)=0
+Y = g(X) + Z'γ + e with E(e|W)=0
 
 where Y is a scalar dependent variable ("depvar"), 
 X is a scalar endogenous variable ("expvar"), 
-W is a vector of exogeneous covariats ("exovar"), and 
-Z is a scalar instrument ("inst").
+Z is a vector of exogeneous covariats ("exovar"), and 
+W is a scalar instrument ("inst").
 
 Syntax:
-npivreg depvar expvar inst exovar [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) pctile(#) polynomial increasing decreasing] 
+npivreg depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) pctile(#) polynomial increasing decreasing] 
 
 where power_exp is the power of basis functions for x (defalut = 2),
 power_inst is the power of basis functions for z (defalut = 3),
@@ -21,7 +21,7 @@ num_exp is the number of knots for x (defalut = 2),
 num_inst is the number of knots for z (defalut = 3), 
 pctile (default = 5) indicates the domain over which the NPIV sieve estimator is computed.
 Given pctile(a), a to (1-a) percentiles of X are used in generating spline basis for X.
-polonomial option gives the basis functions for polynomial spline (default is bslpline).
+polonomial option gives the basis functions for power polynomials(default is bslpline).
 
 # shape restrictions (bspline is used - power of bslpine for "expvar" is fixed to 2.
 increasing option imposes a increasing shape restriction on function g(X).
@@ -40,7 +40,7 @@ program define npivreg, eclass
 		version 11
 		
 		// initializations
-		syntax varlist(numeric fv) [if] [in] [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) polynomial increasing decreasing]
+		syntax varlist(numeric fv) [if] [in] [, power_exp(integer 2) power_inst(integer 3) num_exp(integer 2) num_inst(integer 3) pctile(integer 5) POLYnomial INCreasing DECreasing]
 		marksample touse
 		
 		// generate temporary names to avoid any crash in Stata spaces
@@ -53,7 +53,7 @@ program define npivreg, eclass
 		capture drop npest* 
 		capture drop grid*
 		
-		// macro assignments
+		// local macro assignments
 		gettoken depvar varlist : varlist
 		gettoken expvar varlist : varlist
 		gettoken inst exovar : varlist
@@ -192,8 +192,7 @@ program define npivreg, eclass
 		
 		// convert the Stata matrices to Stata variable
 		svmat `Yhat', name(npest)  // NPIV estimate on grid
-		
-		
+				
 		ereturn post `b'
 		ereturn scalar N          = `N'
 		ereturn scalar powerexp   = `power_exp'
@@ -205,8 +204,8 @@ program define npivreg, eclass
 		ereturn scalar gmax       = `gmax'
 		ereturn scalar xmin       = `xmin'
 		ereturn scalar xmax       = `xmax'
-		ereturn scalar zmin       = `zmin'
-		ereturn scalar zmax       = `zmax'
+		ereturn scalar wmin       = `zmin'
+		ereturn scalar wmax       = `zmax'
 		
 		ereturn local cmd "npivreg" 
 		ereturn local title "Nonparametric IV regression" 
@@ -301,7 +300,7 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
         optimize_init_which(S, "min")
 		optimize_init_conv_ptol(S, 1e-5)
 		optimize_init_conv_vtol(S, 1e-5)
-		optimize_init_conv_ignorenrtol(S, "on")
+		optimize_init_conv_ignorenrtol(S, "off")
 		temp       = optimize(S) // parameter estimated by optimisation
      	beta       = J(1, n, 0)
 		prebeta    = J(1, n, 0)
@@ -309,7 +308,7 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		prebeta[1] = temp[1]
 		
 		for (i = 2; i<=np0; i++) {
-		   prebeta[i] = exp(temp[i])
+		   prebeta[i] = abs(temp[i])
 		   beta[i] = sum(prebeta)
 		   }
 		
@@ -363,7 +362,7 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
         optimize_init_which(S, "min")
 		optimize_init_conv_ptol(S, 1e-5)
 		optimize_init_conv_vtol(S, 1e-5)
-		optimize_init_conv_ignorenrtol(S, "on")
+		optimize_init_conv_ignorenrtol(S, "off")
 		temp       = optimize(S) // parameter estimated by optimisation
      	beta       = J(1, n, 0)
 		prebeta    = J(1, n, 0)
@@ -371,7 +370,7 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
 		prebeta[1] = temp[1]
 		
 		for (i = 2; i<=np0; i++) {
-		   prebeta[i] = -exp(temp[i])
+		   prebeta[i] = -abs(temp[i])
 		   beta[i]    = sum(prebeta)
 		   }
 		   
@@ -400,7 +399,7 @@ void objfn(real scalar todo, real vector B, real matrix P, real matrix P0,
 		prebb   = J(1, n, 0)
 		prebb[1]= B[1] 
 		for (i = 2; i<=np0; i++) {
-		   prebb[i] = exp(B)[i]
+		   prebb[i] = abs(B)[i]
 		   bb[i]    = sum(prebb)
 		   }
 		for (i = (np0 + 1); i<=n; i++) {
@@ -422,7 +421,7 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
 		prebb   = J(1, n, 0)
 		prebb[1]= B[1]
 		for (i = 2; i<=np0; i++) {
-		   prebb[i] = -exp(B)[i]
+		   prebb[i] = -abs(B)[i]
 		   bb[i]    = sum(prebb)
 		   }
 		for (i = (np0 +1); i<=n; i++) {
@@ -446,6 +445,3 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
  }
  
  end
-
-
- 
