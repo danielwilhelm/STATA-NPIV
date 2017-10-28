@@ -66,7 +66,7 @@ The command `npivregcv` estimates the function g(x) in the NPIV model using cros
 
 ## Output
 
-The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest`. In addition, `npivregcv` stores the cross-validated number of knots in the variable `opt_knot`. The vector of coefficients is stored in `beta`.
+The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest`. In addition, the commands are of the e-class so other results such as the coefficient vector are stored in e(). 
 
 
 ## Examples
