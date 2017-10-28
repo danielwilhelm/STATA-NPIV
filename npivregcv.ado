@@ -1,26 +1,24 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with cross validation
-This command requires `npivreg.ado' file. 
+This command is built upon `npivreg' command. 
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.1.1 30th Sep 2017
+Version 1.1.2 25th Oct 2017
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
-Y = g(X) + W'γ + e with E(e|Z)=0
+Y = g(X) + Z'γ + e with E(e|W)=0
 
 where Y is a scalar dependent variable ("depvar"), 
 X is a scalar endogenous variable ("expvar"), 
-W is a vector of exogeneous covariats ("exovar"), and 
-Z a scalar instrument ("inst").
-
-The optimal number of knots is computed by cross validation. 
-
-Syntax:
-npivregcv depvar expvar inst exovar, power_exp(#) power_inst(#) pctile(#) polynomial increasing decreasing] 
+Z is a vector of exogeneous covariats ("exovar"), and 
+W a scalar instrument ("inst").
 
 The optimal number of knots is selected automatically by cross validation. 
+
+Syntax:
+npivregcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) pctile(#) polynomial increasing decreasing] 
 
 For faster computation, cross validation is done in the following way.
 
@@ -29,11 +27,10 @@ For faster computation, cross validation is done in the following way.
 3. Define the fitted values of Y0 (Y1) by using estimation result from Y1 (Y0)
 4. Evaluate MSE for each subsample and choose the number of knots minimisng average MSE
 
-where power_exp is the power of basis functions for x (defalut = 2),
-power_inst is the power of basis functions for z (defalut = 3),
+where power_exp is the power of basis functions for X (defalut = 2),
+power_inst is the power of basis functions for W (defalut = 3),
 pctile (default = 5) indicates the domain over which the NPIV sieve estimator is computed.
-Given pctile(a), a to (1-a) percentiles of X are used in generating spline basis for X.
-polonomial option gives the basis functions for polynomial spline (default is bslpline).
+polonomial option gives the basis functions for power polynomials (default is bslpline).
 
 # shape restrictions (bspline is used - power of bslpine for "expvar" is fixed to 2).
 increasing option imposes a increasing shape restriction on function g(X).
@@ -52,16 +49,17 @@ program define npivregcv, eclass
 		version 11
 		
 // initializations
-syntax varlist(numeric fv) [, power_exp(integer 2) power_inst(integer 3) pctile(integer 5) maxknot(integer 5) polynomial increasing decreasing]
+syntax varlist(numeric fv) [, power_exp(integer 2) power_inst(integer 3) pctile(integer 5) maxknot(integer 5) POLYnomial INCreasing DECreasing]
 
+// generate temporary names to avoid any crash in Stata spaces
 tempvar Y1 Y0 samplesplit splitdummy xlpct xupct 
 tempname opt_knot
 
+// local macro assignments
 gettoken dep varlist : varlist
 gettoken exp varlist : varlist
 gettoken iv varlist : varlist
 local exo `varlist'
-
 local power1 `power_exp'
 local power2 `power_inst'
 local upctile = 100 - `pctile'
@@ -72,7 +70,7 @@ local xmin = `xlpct'
 local xmax = `xupct'
 				
 quietly summarize `dep'
-local N = max( r(N)^(1/5)/2, `maxknot')
+local knot = max( r(N)^(1/5), `maxknot')
 
 set seed 1004
 gen double `samplesplit' = rnormal(0, 1)
@@ -83,17 +81,17 @@ gen byte `splitdummy' = (`samplesplit' > `med')
 quietly gen `Y1' = `dep' if `splitdummy'
 quietly gen `Y0' = `dep' if 1-`splitdummy'
 
-mata : mse    = J(2, `N', 10^10)
+mata : mse    = J(2, `knot', 10^10)
 mata : Y1     = st_data(., "`Y1'", 0)
 mata : Y0     = st_data(., "`Y0'", 0)
-mata : fitted1 = J(rows(Y1),`N', 0) 
-mata : fitted0 = J(rows(Y0),`N', 0) 
+mata : fitted1 = J(rows(Y1),`knot', 0) 
+mata : fitted0 = J(rows(Y0),`knot', 0) 
 
 
 display " "
 display "Execute cross validation for subsample 0"
 
-forvalues i = 3/`N' {
+forvalues i = 3/`knot' {
 local knots `i'
 local x_distance = (`xmax' - `xmin')/(`knots' - 1 )	
 
@@ -146,7 +144,7 @@ capture drop npest*
 display " "
 display "Execute cross validation for subsample 1"
 
-forvalues i = 3/`N' {
+forvalues i = 3/`knot' {
 local knots `i'
 local x_distance = (`xmax' - `xmin')/(`knots' - 1 )	
 
@@ -236,6 +234,8 @@ else {
 
 display "The number of optimal knots = " `opt_knot'
 
+ereturn scalar maxknot = `knot'
+ereturn scalar optknot = `opt_knot'
 ereturn local cmd "npivregcv" 
 ereturn local title "Nonparametric IV regression with cross-validation" 
 end
