@@ -3,6 +3,8 @@ Authors : Dongwoo Kim and Daniel Wilhelm
 
 This project provides two Stata commands for nonparametric estimation of instrumental variable (NPIV) models with or without imposing monotonicity restrictions on the function of interest. The command `npivreg` implements the estimators with user-chosen tuning parameters and `npivregcv` with tuning parameters chosen by cross-validation.
 
+More detailed description of the commands, their syntax, and examples can be found in Chetverikov, Kim, and Wilhelm (2017).
+
 Files contained in this package:
 
 - The file `npivreg.ado` contains the `npivreg` command.
@@ -93,4 +95,6 @@ npivregcv y x w z, power_exp(2) power_inst(3) increasing
 
 # Reference
 [Chetverikov, D. and Wilhelm, D. (2017), "Nonparametric Instrumental Variable Estimation Under Monotonicity", Econometrica, 85(4), p. 1303-1320](http://onlinelibrary.wiley.com/doi/10.3982/ECTA13639/full)
+
+[Chetverikov, D., Kim, D. and Wilhelm, D. (2017), "Nonparametric Instrumental Variable Estimation", CeMMAP Working Paper 47/17](http://www.ucl.ac.uk/~uctpdwi/papers/cwp471717.pdf)
 
