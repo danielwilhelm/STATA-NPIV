@@ -1,6 +1,6 @@
 clear
-capture program drop npivregcv
-capture program drop npivreg
+capture program drop npivcv
+capture program drop npiv
 
 // set the seed
 set seed 1234
@@ -30,9 +30,9 @@ generate true_y = exp(0.5*x)/(1 + exp(0.5*x))
 
 generate y =  true_y + 0.5*w + u
 
-// provide npivreg estimator 'npest' (fitted value) with increasing shape restriction
+// provide npiv estimator 'npest' (fitted value) with increasing shape restriction
 // and coefficients of series estimation
-npivreg y x z w, pctile(1) increasing
+npiv y x z w, pctile(1) increasing
 
 // save this one-step estimate in onestepest
 generate onestepest = npest
@@ -50,8 +50,8 @@ end
 
 getmata Ey, force
 
-// define Y = y - Ey and run npivreg of Y on x only 
+// define Y = y - Ey and run npiv of Y on x only 
 quietly generate Y = y - Ey
-npivreg Y x z, pctile(1) increasing
+npiv Y x z, pctile(1) increasing
 
 quietly line true_y x, sort || line npest grid || line onestepest grid
