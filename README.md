@@ -1,14 +1,14 @@
 # STATA-NPIV 
 Authors : Dongwoo Kim and Daniel Wilhelm
 
-This project provides two Stata commands for nonparametric estimation of instrumental variable (NPIV) models with or without imposing monotonicity restrictions on the function of interest. The command `npivreg` implements the estimators with user-chosen tuning parameters and `npivregcv` with tuning parameters chosen by cross-validation.
+This project provides two Stata commands for nonparametric estimation of instrumental variable (NPIV) models with or without imposing monotonicity restrictions on the function of interest. The command `npiv` implements the estimators with user-chosen tuning parameters and `npivcv` with tuning parameters chosen by cross-validation.
 
 More detailed description of the commands, their syntax, and examples can be found in Chetverikov, Kim, and Wilhelm (2017).
 
 Files contained in this package:
 
-- The file `npivreg.ado` contains the `npivreg` command.
-- The file `npivregcv.ado` contains the `npivregcv` command.
+- The file `npiv.ado` contains the `npiv` command.
+- The file `npivcv.ado` contains the `npivcv` command.
 - The file `example_no_shape_restriction.do` contains an example that simulates data and then estimates the NPIV model without imposing the monotonicity restriction.
 - The file `example_shape_restriction.do` contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction.
 - The file `mcsimulation_cv.do` contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction and using cross-validated tuning parameters.
@@ -24,10 +24,10 @@ Files contained in this package:
 	```
 
 3. Change into the directory containing this package.
-4. Use the commands `npivreg` and `npivregcv` as described below.
+4. Use the commands `npiv` and `npivcv` as described below.
 
 ## Syntax
-The commands `npivreg` and `npivregcv` estimate the function g(x) in the NPIV model
+The commands `npiv` and `npivcv` estimate the function g(x) in the NPIV model
 
 ```
 Y = g(X) + Z'γ + e      E[e | Z, W] = 0
@@ -42,8 +42,8 @@ where
 Syntax:
 
 ```
-npivreg depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
-npivregcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) maxknot(#) polynomial increasing decreasing]
+npiv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) polynomial increasing decreasing]
+npivcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) maxknot(#) polynomial increasing decreasing]
 ```
 
 where
@@ -63,33 +63,33 @@ when shape restrictions are not imposed.
 
 If options are left unspecified, the command runs on the default settings.
 
-The command `npivregcv` estimates the function g(x) in the NPIV model using cross-validation to find the optimal number of knots (setting `num_exp=num_inst`).
+The command `npivcv` estimates the function g(x) in the NPIV model using cross-validation to find the optimal number of knots (setting `num_exp=num_inst`).
 
 
 ## Output
 
-The commands `npivreg` and `npivregcv` save their estimates of g(x) over a grid of values for x in the variable `npest`. In addition, the commands are of the e-class so other results such as the coefficient vector are stored in e(). 
+The commands `npiv` and `npivcv` save their estimates of g(x) over a grid of values for x in the variable `npest`. In addition, the commands are of the e-class so other results such as the coefficient vector are stored in e(). 
 
 
 ## Examples
 
 NPIV estimation with default options:
 ```
-npivreg y x w z
+npiv y x w z
 ```
 
 NPIV estimation with B-spline bases of powers 2 and 3, and 3 and 4 knots (for X and W, respectively):
 ```
-npivreg y x w z, power_exp(2) power_inst(3) num_exp(3) num_inst(4)
+npiv y x w z, power_exp(2) power_inst(3) num_exp(3) num_inst(4)
 ```
 
 NPIV estimation with B-spline bases of powers 2 and 3, and 3 and 4 knots (for X and W, respectively), imposing that the estimator of g(x) is increasing:
 ```
-npivreg y x w z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) increasing
+npiv y x w z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) increasing
 ```
 NPIV estimation using cross-validation to determine the optimal number of knots, imposing that the estimator of g(x) is increasing:
 ```
-npivregcv y x w z, power_exp(2) power_inst(3) increasing
+npivcv y x w z, power_exp(2) power_inst(3) increasing
 ```
 
 
