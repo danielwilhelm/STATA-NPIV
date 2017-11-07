@@ -13,7 +13,7 @@ Z is a vector of exogeneous covariats ("exovar"), and
 W is a scalar instrument ("inst").
 
 Syntax:
-npivreg depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) pctile(#) polynomial increasing decreasing] 
+npiv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) num_exp(#) num_inst(#) pctile(#) polynomial increasing decreasing] 
 
 where power_exp is the power of basis functions for x (defalut = 2),
 power_inst is the power of basis functions for z (defalut = 3),
@@ -36,7 +36,7 @@ when shape restrictions are not imposed.
 If unspecified, the command runs on a default setting.
 */
 
-program define npivreg, eclass
+program define npiv, eclass
 		version 11
 		
 		// initializations
@@ -207,7 +207,7 @@ program define npivreg, eclass
 		ereturn scalar wmin       = `zmin'
 		ereturn scalar wmax       = `zmax'
 		
-		ereturn local cmd "npivreg" 
+		ereturn local cmd "npiv" 
 		ereturn local title "Nonparametric IV regression" 
 		ereturn local depvar "`depvar'" 
 		ereturn local expvar "`expvar'" 
@@ -445,3 +445,6 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
  }
  
  end
+
+
+ 
