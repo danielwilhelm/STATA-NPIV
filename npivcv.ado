@@ -1,6 +1,6 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with cross validation
-This command is built upon `npivreg' command. 
+This command is built upon `npiv' command. 
 
 Author : Dongwoo Kim (University College London)
 
@@ -18,7 +18,7 @@ W a scalar instrument ("inst").
 The optimal number of knots is selected automatically by cross validation. 
 
 Syntax:
-npivregcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) pctile(#) polynomial increasing decreasing] 
+npivcv depvar expvar inst [exovar] [if] [in] [, power_exp(#) power_inst(#) pctile(#) polynomial increasing decreasing] 
 
 For faster computation, cross validation is done in the following way.
 
@@ -45,7 +45,7 @@ when shape restrictions are not imposed.
 If unspecified, the command runs on a default setting.
 */
 
-program define npivregcv, eclass
+program define npivcv, eclass
 		version 11
 		
 // initializations
@@ -98,17 +98,17 @@ local x_distance = (`xmax' - `xmin')/(`knots' - 1 )
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
 	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else if "`decreasing'" == "decreasing" {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
 	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
 	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(`power1')
 	}
 }
@@ -123,7 +123,7 @@ else {
 	error 498
 	}
 	else {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
 	quietly polyspline `exp' if `splitdummy' == 1, gen(temp1basis) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
 	
 	}
@@ -151,17 +151,17 @@ local x_distance = (`xmax' - `xmin')/(`knots' - 1 )
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
 	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else if "`decreasing'" == "decreasing" {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
 	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
 	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(`power1')
 	}
 }
@@ -176,7 +176,7 @@ else {
 	error 498
 	}
 	else {
-	npivreg `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
+	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
 	quietly polyspline `exp' if `splitdummy' == 0, gen(temp0basis) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
 	
 	}
@@ -206,15 +206,15 @@ display "Run NPIV regression with the optimal knots"
 if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
-	npivreg `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile') increasing
+	npiv `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile') increasing
 	}
 	
 	else if "`decreasing'" == "decreasing" {
-	npivreg `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile') decreasing
+	npiv `dep' `exp' `iv' `exo', power_exp(2) power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile') decreasing
 	}
 	
 	else {
-	npivreg `dep' `exp' `iv' `exo', power_exp(`power1') power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile')
+	npiv `dep' `exp' `iv' `exo', power_exp(`power1') power_inst(`power2') num_exp(`opt_knot') num_inst(`opt_knot') pctile(`pctile')
 	}
 }
 
@@ -228,7 +228,7 @@ else {
 	error 498
 	}
 	else {
-	npivreg `dep' `exp' `iv' `exo', power_exp(`opt_knot') power_inst(`opt_knot') pctile(`pctile') polynomial
+	npiv `dep' `exp' `iv' `exo', power_exp(`opt_knot') power_inst(`opt_knot') pctile(`pctile') polynomial
 	}
 }
 
@@ -236,6 +236,6 @@ display "The number of optimal knots = " `opt_knot'
 
 ereturn scalar maxknot = `knot'
 ereturn scalar optknot = `opt_knot'
-ereturn local cmd "npivregcv" 
+ereturn local cmd "npivcv" 
 ereturn local title "Nonparametric IV regression with cross-validation" 
 end
