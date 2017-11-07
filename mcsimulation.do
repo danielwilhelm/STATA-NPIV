@@ -6,7 +6,7 @@ capture program drop mcsimulation_no_shape
 capture program drop mcsimulation_shape
 
 // This stata implemented command does MC simulation
-// simulation for npivreg
+// simulation for npiv
 // # of knots, powers can be modified in mctest_npiv
 // The estimated function in each trial is stored in _b_r# vector
 simulate _b, rep(10) : mcsimulation_no_shape
@@ -39,7 +39,7 @@ svmat ci_right, name(ci_right)
 // Line graph
 #delimit ;
 line true grid, sort || line meanest grid || line ci_left grid, lcolor(red) || line ci_right grid, 
-    lcolor(red)	xtitle("x") ytitle("y")	title("npivreg") 
+    lcolor(red)	xtitle("x") ytitle("y")	title("npiv") 
 	legend(label(1 "True fn") label(2 "Aver. est.") label(3 "-2SD") label(4 "+2SD")) name(monotone, replace);
 #delimit cr
 
@@ -82,4 +82,4 @@ line true grid, sort || line meanest grid || line ci_left grid, lcolor(red) || l
 
 graph close _all
 
-gr combine monotone unconst, title("npivreg(left) vs npivmonotone(right)") ycommon xcommon
+gr combine monotone unconst, title("npiv(left) vs npivmonotone(right)") ycommon xcommon
