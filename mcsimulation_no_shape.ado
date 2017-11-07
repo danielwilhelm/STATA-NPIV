@@ -2,7 +2,7 @@
 // and compute npiv estimate without shape restriction
 
 program define mcsimulation_no_shape, eclass
-capture program drop npivreg
+capture program drop npiv
 clear 
 // sample size for mc simulation is only possible upto 800 in Stata IC.
 // In MP or SE, it can be upto 11,000.
@@ -27,7 +27,7 @@ generate true_y = exp(0.5*x) / (1 + exp(0.5*x))
 generate y =  true_y + u
 
 // NPIV regression 
-npivreg y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(1)
+npiv y x z, power_exp(2) power_inst(3) num_exp(3) num_inst(4) pctile(1)
 mkmat npest1, matrix(A)
 matrix B = A'
 
