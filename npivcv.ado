@@ -4,7 +4,7 @@ This command is built upon `npiv' command.
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.1.2 25th Oct 2017
+Version 1.2.0 23rd Feb 2018
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -53,7 +53,6 @@ syntax varlist(numeric fv) [, power_exp(integer 2) power_inst(integer 3) pctile(
 
 // generate temporary names to avoid any crash in Stata spaces
 tempvar Y1 Y0 samplesplit splitdummy xlpct xupct 
-tempname opt_knot
 
 // local macro assignments
 gettoken dep varlist : varlist
@@ -81,15 +80,10 @@ gen byte `splitdummy' = (`samplesplit' > `med')
 quietly gen `Y1' = `dep' if `splitdummy'
 quietly gen `Y0' = `dep' if 1-`splitdummy'
 
-mata : mse    = J(2, `knot', 10^10)
-mata : Y1     = st_data(., "`Y1'", 0)
-mata : Y0     = st_data(., "`Y0'", 0)
-mata : fitted1 = J(rows(Y1),`knot', 0) 
-mata : fitted0 = J(rows(Y0),`knot', 0) 
-
-
 display " "
 display "Execute cross validation for subsample 0"
+
+mata : mse = J(2, `knot', 10^5)
 
 forvalues i = 3/`knot' {
 local knots `i'
@@ -99,17 +93,17 @@ if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
-	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(2)
+	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(t_e_m_p) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else if "`decreasing'" == "decreasing" {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
-	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(2)
+	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(t_e_m_p) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
-	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(temp1basis) knots(`xmin'(`x_distance')`xmax') power(`power1')
+	quietly bspline if `splitdummy' == 1, xvar(`exp') gen(t_e_m_p) knots(`xmin'(`x_distance')`xmax') power(`power1')
 	}
 }
 
@@ -124,20 +118,15 @@ else {
 	}
 	else {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 0, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
-	quietly polyspline `exp' if `splitdummy' == 1, gen(temp1basis) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
+	quietly polyspline `exp' if `splitdummy' == 1, gen(t_e_m_p) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
 	
 	}
 }
 			
-
-mata : b = st_matrix("e(b)")'			
-mata : T = st_data(., "temp1basis*",0)
-mata : n = cols(T)
-mata : fitted1[,`i'] = T*b[1..n]
-mata : mse[1, `i'] = sum( (Y1  - fitted1[,`i']):^2)/rows(Y1)
+mata : mse[1, `knots']  = msq_err("`Y1'", "e(b)", "t_e_m_p*")
 
 capture drop grid* 
-capture drop temp1basis* 
+capture drop t_e_m_p* 
 capture drop npest*
 }
 
@@ -152,17 +141,17 @@ if "`polynomial'" == "" {
 	// check whether increasing option is used        
 	if "`increasing'" == "increasing" {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') increasing
-	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(2)
+	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(t_e_m_p) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else if "`decreasing'" == "decreasing" {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(2) power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile') decreasing
-	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(2)
+	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(t_e_m_p) knots(`xmin'(`x_distance')`xmax') power(2)
 	}
 	
 	else {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`power1') power_inst(`power2') num_exp(`knots') num_inst(`knots') pctile(`pctile')
-	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(temp0basis) knots(`xmin'(`x_distance')`xmax') power(`power1')
+	quietly bspline if `splitdummy' == 0, xvar(`exp') gen(t_e_m_p) knots(`xmin'(`x_distance')`xmax') power(`power1')
 	}
 }
 
@@ -177,29 +166,21 @@ else {
 	}
 	else {
 	npiv `dep' `exp' `iv' `exo' if `splitdummy' == 1, power_exp(`knots') power_inst(`knots') pctile(`pctile') polynomial
-	quietly polyspline `exp' if `splitdummy' == 0, gen(temp0basis) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
+	quietly polyspline `exp' if `splitdummy' == 0, gen(t_e_m_p) refpts(`xmin'(`x_distance')`xmax') power(`knots') 
 	
 	}
 }
-			
 
-mata : b = st_matrix("e(b)")'			
-mata : T = st_data(., "temp0basis*",0)
-mata : n = cols(T)
-mata : fitted0[,`i'] = T*b[1..n]
-mata : mse[2, `i'] = sum( (Y0  - fitted0[,`i']):^2)/rows(Y0)
+mata : mse[2, `knots'] = msq_err("`Y0'", "e(b)", "t_e_m_p*")
 
 capture drop grid* 
-capture drop temp0basis* 
+capture drop t_e_m_p* 
 capture drop npest*
 }
 
-mata : criterion = colsum(mse)
-mata : s      = (criterion :== min(criterion))
-mata : opt_knot = select(1..cols(mse), s)
-mata : st_numscalar("`opt_knot'", opt_knot)
+mata : opt_knot(mse)
 
-local opt_knot = `opt_knot'
+local opt_knot = opt_knot
 display " "
 display "Run NPIV regression with the optimal knots"
 
@@ -239,3 +220,28 @@ ereturn scalar optknot = `opt_knot'
 ereturn local cmd "npivcv" 
 ereturn local title "Nonparametric IV regression with cross-validation" 
 end
+
+mata :
+real scalar msq_err(string scalar dep, string scalar b, string scalar temp)
+ 
+{
+Y = st_data(., dep, 0)
+b = st_matrix(b)'			
+T = st_data(., temp,0)
+n = cols(T)
+fitted = T*b[1..n]
+msq = sum( (Y  - fitted):^2)/rows(Y)
+return(msq)
+}
+
+void opt_knot(real matrix M)
+
+{
+criterion = colsum(M)
+s         = (criterion :== min(criterion))
+opt_knot  = select(1..cols(M), s)
+st_numscalar("opt_knot", opt_knot)
+}
+
+end
+
