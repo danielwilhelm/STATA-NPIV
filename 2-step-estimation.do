@@ -1,12 +1,12 @@
 clear
-capture program drop npivcv
-capture program drop npiv
+capture program drop npivregcv
+capture program drop npivreg
 
 // set the seed
 set seed 1234
 
 // number of observations = sample size
-set obs 100
+set obs 10000
 
 // instrument z is generated from standard normal dist.
 generate double z = rnormal(0, 1)
@@ -30,28 +30,25 @@ generate true_y = exp(0.5*x)/(1 + exp(0.5*x))
 
 generate y =  true_y + 0.5*w + u
 
-// provide npiv estimator 'npest' (fitted value) with increasing shape restriction
+// provide npivreg estimator 'npest' (fitted value) with increasing shape restriction
 // and coefficients of series estimation
-npiv y x z w, pctile(1) increasing
-
+npivcv y x z w, pctile(1)
 // save this one-step estimate in onestepest
 generate onestepest = npest
 
 // get Ey = W'γ
 mata
-
-bw = st_data(., "beta", 0)
+bw = st_matrix("e(b)")
 W  = st_data(., "w", 0)
 n  = rows(bw)
-
-Ey = W*bw[4..n]
-
+np = n - cols(W)
+Ey = bw[(np+1)..n]*W
 end
 
 getmata Ey, force
 
-// define Y = y - Ey and run npiv of Y on x only 
+// define Y = y - Ey and run npivreg of Y on x only 
 quietly generate Y = y - Ey
-npiv Y x z, pctile(1) increasing
+npivcv Y x z, pctile(5)
 
 quietly line true_y x, sort || line npest grid || line onestepest grid
