@@ -1,12 +1,13 @@
-clear
-capture program drop npivregcv
-capture program drop npivreg
+clear all
+capture program drop npivcv
+capture program drop npiv
+set more off
 
 // set the seed
 set seed 1234
 
 // number of observations = sample size
-set obs 10000
+set obs 100
 
 // instrument z is generated from standard normal dist.
 generate double z = rnormal(0, 1)
