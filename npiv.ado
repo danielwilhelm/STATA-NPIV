@@ -60,7 +60,8 @@ program define npiv, eclass
 		}
 		
 		// generate temporary names to avoid any crash in Stata spaces
-		tempvar b Y Yhat xlpct xupct
+		tempvar b Y Yhat xlpct xupct 
+		tempname e_x_p_v_old i_n_s_t_old g_r_i_d_old
 		
 		// eliminate old (from the regression before the previous one) NPIV regression results if there is any
 		capture drop e_x_p_v_old*
@@ -70,7 +71,7 @@ program define npiv, eclass
 		capture drop grid_old
 		
 		// store previous bases to stata matrices
-		capture mata : oldres_fn("e_x_p_v*", "i_n_s_t*", "g_r_i_d*")
+		capture mata : oldres_fn("e_x_p_v*", "i_n_s_t*", "g_r_i_d*", "`e_x_p_v_old'", "`i_n_s_t_old'", "`g_r_i_d_old'")
 		
 		// rename the previous estimation results
 		capture rename npest npest_old 
@@ -214,9 +215,9 @@ program define npiv, eclass
 		
 		// convert the Stata matrices to Stata variable
 		svmat `Yhat', name(npest)  // NPIV estimate on grid
-		capture svmat e_x_p_v_old, name(e_x_p_v_old) // old bases for expvar
-		capture svmat i_n_s_t_old, name(i_n_s_t_old) // old bases for inst
-		capture svmat g_r_i_d_old, name(g_r_i_d_old) // old bases for grid
+		capture svmat `e_x_p_v_old', name(e_x_p_v_old) // old bases for expvar
+		capture svmat `i_n_s_t_old', name(i_n_s_t_old) // old bases for inst
+		capture svmat `g_r_i_d_old', name(g_r_i_d_old) // old bases for grid
 		
 		ereturn post `b'
 		ereturn scalar N          = `N'
@@ -244,6 +245,15 @@ program define npiv, eclass
 		rename npest1 npest
 		
 		label variable npest "NPIV fitted values"
+		label variable grid  "Find grid of expvar"
+		capture label variable e_x_p_v1 "Spline Bases for expvar"
+		capture label variable i_n_s_t1 "Spline Bases for inst"
+		capture label variable g_r_i_d1 "Spline Bases for grid points"
+		capture label variable npest_old "Old NPIV fitted values"
+		capture label variable grid_old  "Old Find grid of expvar"
+		capture label variable e_x_p_v_old1 "Old Spline Bases for expvar"
+		capture label variable i_n_s_t_old1 "Old Spline Bases for inst"
+		capture label variable g_r_i_d_old1 "Old Spline Bases for grid points"
 				
 end
 
@@ -541,16 +551,17 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
  }
  
  // store old bases to Stata matrices
- void oldres_fn(string scalar basisname1, string scalar basisname2, string scalar basisname3) 
+ void oldres_fn(string scalar basisname1, string scalar basisname2, string scalar basisname3,
+ string scalar matname1, string scalar matname2, string scalar matname3) 
  
  {
- e_x_p_v_old = st_data(., basisname1, 0)	
- i_n_s_t_old = st_data(., basisname2, 0)	
- g_r_i_d_old = st_data(., basisname3, 0)	
+ e_x_p_v = st_data(., basisname1, 0)	
+ i_n_s_t = st_data(., basisname2, 0)	
+ g_r_i_d = st_data(., basisname3, 0)	
  
- st_matrix("e_x_p_v_old", e_x_p_v_old)
- st_matrix("i_n_s_t_old", i_n_s_t_old)
- st_matrix("g_r_i_d_old", g_r_i_d_old)
+ st_matrix(matname1, e_x_p_v)
+ st_matrix(matname2, i_n_s_t)
+ st_matrix(matname3, g_r_i_d)
  }
  
  
