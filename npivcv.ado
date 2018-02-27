@@ -52,7 +52,18 @@ program define npivcv, eclass
 syntax varlist(numeric fv) [, power_exp(integer 2) power_inst(integer 3) pctile(integer 5) maxknot(integer 5) POLYnomial INCreasing DECreasing]
 
 // generate temporary names to avoid any crash in Stata spaces
-tempvar Y1 Y0 samplesplit splitdummy xlpct xupct 
+tempvar Y1 Y0 samplesplit splitdummy xlpct xupct
+tempname e_x_p_v_cv_old i_n_s_t_cv_old g_r_i_d_cv_old npest_cv_old grid_cv_old
+
+// eliminate old (from the regression before the previous one) NPIV regression results if there is any
+capture drop e_x_p_v_cv_old*
+capture drop i_n_s_t_cv_old*
+capture drop g_r_i_d_cv_old*
+capture drop npest_cv_old 
+capture drop grid_cv_old
+
+// store previous bases to stata matrices
+capture mata : oldres_fn("e_x_p_v*", "i_n_s_t*", "g_r_i_d*", "grid", "npest", "`e_x_p_v_cv_old'", "`i_n_s_t_cv_old'", "`g_r_i_d_cv_old'", "`grid_cv_old'", "`npest_cv_old'")
 
 // local macro assignments
 gettoken dep varlist : varlist
@@ -125,9 +136,7 @@ else {
 			
 mata : mse[1, `knots']  = msq_err("`Y1'", "e(b)", "t_e_m_p*")
 
-capture drop grid* 
 capture drop t_e_m_p* 
-capture drop npest*
 }
 
 display " "
@@ -173,9 +182,7 @@ else {
 
 mata : mse[2, `knots'] = msq_err("`Y0'", "e(b)", "t_e_m_p*")
 
-capture drop grid* 
 capture drop t_e_m_p* 
-capture drop npest*
 }
 
 mata : opt_knot(mse)
@@ -215,10 +222,30 @@ else {
 
 display "The number of optimal knots = " `opt_knot'
 
+capture drop e_x_p_v_old*
+capture drop i_n_s_t_old*
+capture drop g_r_i_d_old*
+capture drop npest_old*
+capture drop grid_old*
+
+capture svmat `e_x_p_v_cv_old', name(e_x_p_v_cv_old) // old bases for expvar
+capture svmat `i_n_s_t_cv_old', name(i_n_s_t_cv_old) // old bases for inst
+capture svmat `g_r_i_d_cv_old', name(g_r_i_d_cv_old) // old bases for grid
+capture svmat `npest_cv_old', name(npest_cv_old) // old bases for inst
+capture svmat `grid_cv_old', name(grid_cv_old) // old bases for grid
+
 ereturn scalar maxknot = `knot'
 ereturn scalar optknot = `opt_knot'
 ereturn local cmd "npivcv" 
 ereturn local title "Nonparametric IV regression with cross-validation" 
+
+capture label variable npest_cv_old "Old NPIV fitted values"
+capture label variable grid_cv_old  "Old Find grid of expvar"
+
+capture label variable e_x_p_v_cv_old1 "Old Spline Bases for expvar"
+capture label variable i_n_s_t_cv_old1 "Old Spline Bases for inst"
+capture label variable g_r_i_d_cv_old1 "Old Spline Bases for grid points"
+
 end
 
 mata :
@@ -242,6 +269,25 @@ s         = (criterion :== min(criterion))
 opt_knot  = select(1..cols(M), s)
 st_numscalar("opt_knot", opt_knot)
 }
+
+ // store old bases to Stata matrices
+ void oldres_fn(string scalar basisname1, string scalar basisname2, string scalar basisname3, string scalar basisname4, string scalar basisname5,
+ string scalar matname1, string scalar matname2, string scalar matname3, string scalar matname4, string scalar matname5) 
+ 
+ {
+ e_x_p_v_cv_old = st_data(., basisname1, 0)	
+ i_n_s_t_cv_old = st_data(., basisname2, 0)	
+ g_r_i_d_cv_old = st_data(., basisname3, 0)	
+ npest_cv_old = st_data(., basisname4, 0)	
+ grid_cv_old = st_data(., basisname5, 0)
+ 
+ st_matrix(matname1, e_x_p_v_cv_old)
+ st_matrix(matname2, i_n_s_t_cv_old)
+ st_matrix(matname3, g_r_i_d_cv_old)
+ st_matrix(matname4, npest_cv_old)
+ st_matrix(matname5, grid_cv_old)
+ }
+ 
 
 end
 
