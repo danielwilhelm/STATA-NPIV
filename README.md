@@ -9,7 +9,8 @@ Files contained in this package:
 
 - The file `npiv.ado` contains the `npiv` command.
 - The file `npivcv.ado` contains the `npivcv` command.
-- The file `mcsimulation.do` contains an example that execute monte carlo simulations showing the variances of npiv estimators with and witout shape restriction. 
+- The file `2-step-estimation.do` contains code for a simulation experiment illustrating how to accommodate exogenous covariates with the `npiv` command.
+- The file `mcsimulation.do` contains code for a simulation experiment that illustrates the relative performance of NPIV estimators with and without imposing shape restrictions.
 - The files `mcsimulation_shape.ado` and `mcsimulation_shape.ado` are used in `mcsimulation.do`. 
 
 
