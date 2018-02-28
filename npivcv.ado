@@ -240,11 +240,11 @@ ereturn local cmd "npivcv"
 ereturn local title "Nonparametric IV regression with cross-validation" 
 
 capture label variable npest_cv_old "Old NPIV fitted values"
-capture label variable grid_cv_old  "Old Find grid of expvar"
+capture label variable grid_cv_old  "Old Fine grid of expvar"
 
-capture label variable e_x_p_v_cv_old1 "Old Spline Bases for expvar"
-capture label variable i_n_s_t_cv_old1 "Old Spline Bases for inst"
-capture label variable g_r_i_d_cv_old1 "Old Spline Bases for grid points"
+capture label variable e_x_p_v_cv_old1 "Old Spline Bases evaluated at expvar"
+capture label variable i_n_s_t_cv_old1 "Old Spline Bases evaluated at inst"
+capture label variable g_r_i_d_cv_old1 "Old Spline Bases evaluated at grid points"
 
 end
 
