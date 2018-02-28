@@ -245,15 +245,15 @@ program define npiv, eclass
 		rename npest1 npest
 		
 		label variable npest "NPIV fitted values"
-		label variable grid  "Find grid of expvar"
-		capture label variable e_x_p_v1 "Spline Bases for expvar"
-		capture label variable i_n_s_t1 "Spline Bases for inst"
-		capture label variable g_r_i_d1 "Spline Bases for grid points"
+		label variable grid  "Fine grid of expvar"
+		capture label variable e_x_p_v1 "Spline Bases evaluated at expvar"
+		capture label variable i_n_s_t1 "Spline Bases evaluated at inst"
+		capture label variable g_r_i_d1 "Spline Bases evaluated at grid points"
 		capture label variable npest_old "Old NPIV fitted values"
 		capture label variable grid_old  "Old Find grid of expvar"
-		capture label variable e_x_p_v_old1 "Old Spline Bases for expvar"
-		capture label variable i_n_s_t_old1 "Old Spline Bases for inst"
-		capture label variable g_r_i_d_old1 "Old Spline Bases for grid points"
+		capture label variable e_x_p_v_old1 "Old Spline Bases evaluated at expvar"
+		capture label variable i_n_s_t_old1 "Old Spline Bases evaluated at inst"
+		capture label variable g_r_i_d_old1 "Old Spline Bases evaluated at grid points"
 				
 end
 
@@ -580,3 +580,6 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
  }
  
  end
+
+
+ 
