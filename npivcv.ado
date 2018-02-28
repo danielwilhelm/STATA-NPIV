@@ -94,7 +94,7 @@ quietly gen `Y0' = `dep' if 1-`splitdummy'
 display " "
 display "Execute cross validation for subsample 0"
 
-mata : mse = J(2, `knot', 10^5)
+mata : mse = J(2, `knot', 10^10)
 
 forvalues i = 3/`knot' {
 local knots `i'
@@ -264,9 +264,10 @@ return(msq)
 void opt_knot(real matrix M)
 
 {
-criterion = colsum(M)
+Msum      = colsum(M)
+criterion = Msum[, 3..cols(M)]
 s         = (criterion :== min(criterion))
-opt_knot  = select(1..cols(M), s)
+opt_knot  = select(3..cols(M), s)
 st_numscalar("opt_knot", opt_knot)
 }
 
