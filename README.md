@@ -9,9 +9,8 @@ Files contained in this package:
 
 - The file `npiv.ado` contains the `npiv` command.
 - The file `npivcv.ado` contains the `npivcv` command.
-- The file `example_no_shape_restriction.do` contains an example that simulates data and then estimates the NPIV model without imposing the monotonicity restriction.
-- The file `example_shape_restriction.do` contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction.
-- The file `mcsimulation_cv.do` contains an example that simulates data and then estimates the NPIV model imposing the monotonicity restriction and using cross-validated tuning parameters.
+- The file `mcsimulation.do` contains an example that execute monte carlo simulations showing the variances of npiv estimators with and witout shape restriction. 
+- The files `mcsimulation_shape.ado` and `mcsimulation_shape.ado` are used in `mcsimulation.do`. 
 
 
 ## Installation
