@@ -4,7 +4,7 @@ This command is built upon `npiv' command.
 
 Author : Dongwoo Kim (University College London)
 
-Version 1.2.0 23rd Feb 2018
+Version 1.3.0 3rd Aug 2018
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -53,17 +53,17 @@ syntax varlist(numeric fv) [, power_exp(integer 2) power_inst(integer 3) pctile(
 
 // generate temporary names to avoid any crash in Stata spaces
 tempvar Y1 Y0 samplesplit splitdummy xlpct xupct
-tempname e_x_p_v_cv_old i_n_s_t_cv_old g_r_i_d_cv_old npest_cv_old grid_cv_old
+tempname exv_cv_old ins_cv_old grd_cv_old npest_cv_old grid_cv_old
 
 // eliminate old (from the regression before the previous one) NPIV regression results if there is any
-capture drop e_x_p_v_cv_old*
-capture drop i_n_s_t_cv_old*
-capture drop g_r_i_d_cv_old*
+capture drop exv_cv_old*
+capture drop ins_cv_old*
+capture drop grd_cv_old*
 capture drop npest_cv_old 
 capture drop grid_cv_old
 
 // store previous bases to stata matrices
-capture mata : oldres_fn("e_x_p_v*", "i_n_s_t*", "g_r_i_d*", "grid", "npest", "`e_x_p_v_cv_old'", "`i_n_s_t_cv_old'", "`g_r_i_d_cv_old'", "`grid_cv_old'", "`npest_cv_old'")
+capture mata : oldres_fn("exv*", "ins*", "grd*", "grid", "npest", "`exv_cv_old'", "`ins_cv_old'", "`grd_cv_old'", "`grid_cv_old'", "`npest_cv_old'")
 
 // local macro assignments
 gettoken dep varlist : varlist
@@ -222,15 +222,15 @@ else {
 
 display "The number of optimal knots = " `opt_knot'
 
-capture drop e_x_p_v_old*
-capture drop i_n_s_t_old*
-capture drop g_r_i_d_old*
+capture drop exv_old*
+capture drop ins_old*
+capture drop grd_old*
 capture drop npest_old*
 capture drop grid_old*
 
-capture svmat `e_x_p_v_cv_old', name(e_x_p_v_cv_old) // old bases for expvar
-capture svmat `i_n_s_t_cv_old', name(i_n_s_t_cv_old) // old bases for inst
-capture svmat `g_r_i_d_cv_old', name(g_r_i_d_cv_old) // old bases for grid
+capture svmat `exv_cv_old', name(exv_cv_old) // old bases for expvar
+capture svmat `ins_cv_old', name(ins_cv_old) // old bases for inst
+capture svmat `grd_cv_old', name(grd_cv_old) // old bases for grid
 capture svmat `npest_cv_old', name(npest_cv_old) // old bases for inst
 capture svmat `grid_cv_old', name(grid_cv_old) // old bases for grid
 
@@ -242,9 +242,9 @@ ereturn local title "Nonparametric IV regression with cross-validation"
 capture label variable npest_cv_old "Old NPIV fitted values"
 capture label variable grid_cv_old  "Old Fine grid of expvar"
 
-capture label variable e_x_p_v_cv_old1 "Old Spline Bases evaluated at expvar"
-capture label variable i_n_s_t_cv_old1 "Old Spline Bases evaluated at inst"
-capture label variable g_r_i_d_cv_old1 "Old Spline Bases evaluated at grid points"
+capture label variable exv_cv_old1 "Old Spline Bases evaluated at expvar"
+capture label variable ins_cv_old1 "Old Spline Bases evaluated at inst"
+capture label variable grd_cv_old1 "Old Spline Bases evaluated at grid points"
 
 end
 
@@ -276,15 +276,15 @@ st_numscalar("opt_knot", opt_knot)
  string scalar matname1, string scalar matname2, string scalar matname3, string scalar matname4, string scalar matname5) 
  
  {
- e_x_p_v_cv_old = st_data(., basisname1, 0)	
- i_n_s_t_cv_old = st_data(., basisname2, 0)	
- g_r_i_d_cv_old = st_data(., basisname3, 0)	
+ exv_cv_old = st_data(., basisname1, 0)	
+ ins_cv_old = st_data(., basisname2, 0)	
+ grd_cv_old = st_data(., basisname3, 0)	
  npest_cv_old = st_data(., basisname4, 0)	
  grid_cv_old = st_data(., basisname5, 0)
  
- st_matrix(matname1, e_x_p_v_cv_old)
- st_matrix(matname2, i_n_s_t_cv_old)
- st_matrix(matname3, g_r_i_d_cv_old)
+ st_matrix(matname1, exv_cv_old)
+ st_matrix(matname2, ins_cv_old)
+ st_matrix(matname3, grd_cv_old)
  st_matrix(matname4, npest_cv_old)
  st_matrix(matname5, grid_cv_old)
  }
