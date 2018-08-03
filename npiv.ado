@@ -1,7 +1,7 @@
 /* 
 Estimation of Nonparametric instrumental variable (NPIV) models with shape restrictions
 
-Version 1.2.0 23rd Feb 2018
+Version 1.3.0 3rd Aug 2018
 
 This program estimates the nonparametric function g(x) and a vector of coefficients of a linear index γ in
 
@@ -37,13 +37,14 @@ If unspecified, the command runs on a default setting.
 
 The bases used in the current regression are provided in Stata variable space.
 
-bases for expvar : e_x_p_v
-bases for inst   : i_n_s_t
-bases for grid   : g_r_i_d
+bases for expvar : exv
+bases for inst   : ins
+bases for grid   : grd
 
 If there exist previous results, those bases are renamed with suffix "_old".
 */
 
+capture program drop npiv
 program define npiv, eclass
 		version 11
 		
@@ -61,26 +62,26 @@ program define npiv, eclass
 		
 		// generate temporary names to avoid any crash in Stata spaces
 		tempvar b Y Yhat xlpct xupct 
-		tempname e_x_p_v_old i_n_s_t_old g_r_i_d_old
+		tempname exv_old ins_old grd_old
 		
 		// eliminate old (from the regression before the previous one) NPIV regression results if there is any
-		capture drop e_x_p_v_old*
-		capture drop i_n_s_t_old*
-		capture drop g_r_i_d_old*
+		capture drop exv_old*
+		capture drop ins_old*
+		capture drop grd_old*
 		capture drop npest_old 
 		capture drop grid_old
 		
 		// store previous bases to stata matrices
-		capture mata : oldres_fn("e_x_p_v*", "i_n_s_t*", "g_r_i_d*", "`e_x_p_v_old'", "`i_n_s_t_old'", "`g_r_i_d_old'")
+		capture mata : oldres_fn("exv*", "ins*", "grd*", "`exv_old'", "`ins_old'", "`grd_old'")
 		
 		// rename the previous estimation results
 		capture rename npest npest_old 
 		capture rename grid grid_old
 		
 		// drop the previous bases to run a new regression
-		capture drop e_x_p_v*
-		capture drop i_n_s_t*
-		capture drop g_r_i_d*
+		capture drop exv*
+		capture drop ins*
+		capture drop grd*
 		
 		
 		// local macro assignments
@@ -146,11 +147,11 @@ program define npiv, eclass
 		display "Number of equally spaced knots for Z: `num_inst'"
 		display "Shape restriction (increasing) is imposed"
 				
-		quietly bspline, xvar(grid) gen(g_r_i_d) knots(`xmin'(`x_distance')`xmax') power(`power_exp') 
-        quietly bspline if `touse', xvar(`expvar') gen(e_x_p_v) knots(`xmin'(`x_distance')`xmax') power(`power_exp')
-		quietly bspline if `touse', xvar(`inst') gen(i_n_s_t) knots(`zmin'(`z_distance')`zmax') power(`powerz')
+		quietly bspline, xvar(grid) gen(grd) knots(`xmin'(`x_distance')`xmax') power(`power_exp') 
+        quietly bspline if `touse', xvar(`expvar') gen(exv) knots(`xmin'(`x_distance')`xmax') power(`power_exp')
+		quietly bspline if `touse', xvar(`inst') gen(ins) knots(`zmin'(`z_distance')`zmax') power(`powerz')
 				
-		mata : npiv_optimize("`Y'", "e_x_p_v*", "i_n_s_t*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
+		mata : npiv_optimize("`Y'", "exv*", "ins*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
 		}
 		
 		// check whether decreasing option is used
@@ -163,11 +164,11 @@ program define npiv, eclass
 		display "Number of equally spaced knots for Z: `num_inst'"
 		display "Shape restriction (decreasing) is imposed"
 		local power_exp = 2
-		quietly bspline, xvar(grid) gen(g_r_i_d) knots(`xmin'(`x_distance')`xmax') power(`power_exp') 
-        quietly bspline if `touse', xvar(`expvar') gen(e_x_p_v) knots(`xmin'(`x_distance')`xmax') power(`power_exp')
-		quietly bspline if `touse', xvar(`inst') gen(i_n_s_t) knots(`zmin'(`z_distance')`zmax') power(`powerz')
+		quietly bspline, xvar(grid) gen(grd) knots(`xmin'(`x_distance')`xmax') power(`power_exp') 
+        quietly bspline if `touse', xvar(`expvar') gen(exv) knots(`xmin'(`x_distance')`xmax') power(`power_exp')
+		quietly bspline if `touse', xvar(`inst') gen(ins) knots(`zmin'(`z_distance')`zmax') power(`powerz')
 		
-		mata : npiv_optimize_dec("`Y'", "e_x_p_v*", "i_n_s_t*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
+		mata : npiv_optimize_dec("`Y'", "exv*", "ins*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
 		}
 		// procedure without shape restrictions
 		else {
@@ -177,11 +178,11 @@ program define npiv, eclass
 		display "Number of equally spaced knots for X: `num_exp'"
 		display "Number of equally spaced knots for Z: `num_inst'"
 		display "no shape restriction"
-		quietly bspline, xvar(grid) gen(g_r_i_d) knots(`xmin'(`x_distance')`xmax') power(`powerx') 
-        quietly bspline if `touse', xvar(`expvar') gen(e_x_p_v) knots(`xmin'(`x_distance')`xmax') power(`powerx')
-		quietly bspline if `touse', xvar(`inst') gen(i_n_s_t) knots(`zmin'(`z_distance')`zmax') power(`powerz')
+		quietly bspline, xvar(grid) gen(grd) knots(`xmin'(`x_distance')`xmax') power(`powerx') 
+        quietly bspline if `touse', xvar(`expvar') gen(exv) knots(`xmin'(`x_distance')`xmax') power(`powerx')
+		quietly bspline if `touse', xvar(`inst') gen(ins) knots(`zmin'(`z_distance')`zmax') power(`powerz')
 		
-		mata : npiv_estimation("`Y'", "e_x_p_v*", "i_n_s_t*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
+		mata : npiv_estimation("`Y'", "exv*", "ins*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
 		}
 		}
 		
@@ -205,19 +206,19 @@ program define npiv, eclass
 		else {
 		local basis "polynomial"
 		local shape "no shape restriction"
-		quietly polyspline grid, gen(g_r_i_d) refpts(`xmin'(`x_distance')`xmax') power(`powerx') 
-        quietly polyspline `expvar' if `touse', gen(e_x_p_v) refpts(`xmin'(`x_distance')`xmax') power(`powerx') 
-		quietly polyspline `inst' if `touse', gen(i_n_s_t) refpts(`zmin'(`z_distance')`zmax') power(`powerz') 
+		quietly polyspline grid, gen(grd) refpts(`xmin'(`x_distance')`xmax') power(`powerx') 
+        quietly polyspline `expvar' if `touse', gen(exv) refpts(`xmin'(`x_distance')`xmax') power(`powerx') 
+		quietly polyspline `inst' if `touse', gen(ins) refpts(`zmin'(`z_distance')`zmax') power(`powerz') 
 
-		mata : npiv_estimation("`Y'", "e_x_p_v*", "i_n_s_t*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
+		mata : npiv_estimation("`Y'", "exv*", "ins*", "`b'", "`exo1'", "`exovar'", "`touse'", "`Yhat'")
 		}
 		}
 		
 		// convert the Stata matrices to Stata variable
 		svmat `Yhat', name(npest)  // NPIV estimate on grid
-		capture svmat `e_x_p_v_old', name(e_x_p_v_old) // old bases for expvar
-		capture svmat `i_n_s_t_old', name(i_n_s_t_old) // old bases for inst
-		capture svmat `g_r_i_d_old', name(g_r_i_d_old) // old bases for grid
+		capture svmat `exv_old', name(exv_old) // old bases for expvar
+		capture svmat `ins_old', name(ins_old) // old bases for inst
+		capture svmat `grd_old', name(grd_old) // old bases for grid
 		
 		ereturn post `b'
 		ereturn scalar N          = `N'
@@ -246,14 +247,14 @@ program define npiv, eclass
 		
 		label variable npest "NPIV fitted values"
 		label variable grid  "Fine grid of expvar"
-		capture label variable e_x_p_v1 "Spline Bases evaluated at expvar"
-		capture label variable i_n_s_t1 "Spline Bases evaluated at inst"
-		capture label variable g_r_i_d1 "Spline Bases evaluated at grid points"
+		capture label variable exv1 "Spline Bases evaluated at expvar"
+		capture label variable ins1 "Spline Bases evaluated at inst"
+		capture label variable grd1 "Spline Bases evaluated at grid points"
 		capture label variable npest_old "Old NPIV fitted values"
 		capture label variable grid_old  "Old Find grid of expvar"
-		capture label variable e_x_p_v_old1 "Old Spline Bases evaluated at expvar"
-		capture label variable i_n_s_t_old1 "Old Spline Bases evaluated at inst"
-		capture label variable g_r_i_d_old1 "Old Spline Bases evaluated at grid points"
+		capture label variable exv_old1 "Old Spline Bases evaluated at expvar"
+		capture label variable ins_old1 "Old Spline Bases evaluated at inst"
+		capture label variable grd_old1 "Old Spline Bases evaluated at grid points"
 				
 end
 
@@ -283,7 +284,7 @@ void npiv_estimation(string scalar vname, string scalar basisname1,
 	// compute the estimate by the closed form solution
 	MQ 		= Q*invsym(Q'*Q)*Q'
 	b  		= invsym(P'*MQ*P)*P'*MQ*Y
-	GP      = st_data(., "g_r_i_d*",0) // spline bases on fine grid points
+	GP      = st_data(., "grd*",0) // spline bases on fine grid points
 	
 	s		= cols(P0)
 	bX		= b[1..s]
@@ -350,7 +351,7 @@ void npiv_optimize(string scalar vname, string scalar basisname1,
 		   }
 		   
 		bX		= beta[1..np0]
-		GP      = st_data(., "g_r_i_d*", 0) // spline bases on fine grid points
+		GP      = st_data(., "grd*", 0) // spline bases on fine grid points
 		Yhat 	= GP*bX' //fitted value on fine grid
 		
 		// store the mata results into the Stata matrix space
@@ -413,7 +414,7 @@ void npiv_optimize_dec(string scalar vname, string scalar basisname1,
 		}   
 		   
 		bX		= beta[1..np0]
-		GP      = st_data(., "g_r_i_d*", 0) // spline bases on fine grid points
+		GP      = st_data(., "grd*", 0) // spline bases on fine grid points
 		Yhat 	= GP*bX' //fitted value on fine grid
 				
 		// store the mata results into the Stata matrix space
@@ -555,13 +556,13 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
  string scalar matname1, string scalar matname2, string scalar matname3) 
  
  {
- e_x_p_v = st_data(., basisname1, 0)	
- i_n_s_t = st_data(., basisname2, 0)	
- g_r_i_d = st_data(., basisname3, 0)	
+ exv = st_data(., basisname1, 0)	
+ ins = st_data(., basisname2, 0)	
+ grd = st_data(., basisname3, 0)	
  
- st_matrix(matname1, e_x_p_v)
- st_matrix(matname2, i_n_s_t)
- st_matrix(matname3, g_r_i_d)
+ st_matrix(matname1, exv)
+ st_matrix(matname2, ins)
+ st_matrix(matname3, grd)
  }
  
  
@@ -580,6 +581,3 @@ void objfn_dec(real scalar todo, real vector B, real matrix P, real matrix P0,
  }
  
  end
-
-
- 
